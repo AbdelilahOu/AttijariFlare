@@ -4,6 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 
 import type { Bindings } from "../bindings";
+import { statementOriginalKey, statementPrefix } from "../statements";
 import { hasUsableText } from "./chunk";
 import { extractStatement, ExtractionError, type RunModel } from "./extract";
 import { fingerprintTransactions, normalizeDescription } from "./fingerprint";
@@ -27,8 +28,8 @@ export type IngestResult = {
 };
 
 export const artifactKeys = (statementId: string) => ({
-  markdown: `statements/${statementId}/extracted.md`,
-  extraction: `statements/${statementId}/extraction.json`,
+  markdown: `${statementPrefix(statementId)}extracted.md`,
+  extraction: `${statementPrefix(statementId)}extraction.json`,
 });
 
 /** D1 allows 100 bound parameters per statement; a transactions row binds at most 18. */
@@ -72,7 +73,7 @@ export async function ingestStatement(
     .set({ status: "extracting", error: null })
     .where(eq(statements.id, statementId));
 
-  const pdf = await env.STATEMENTS.get(statement.r2Key);
+  const pdf = await env.STATEMENTS.get(statement.r2Key || statementOriginalKey(statementId));
   if (!pdf) {
     throw new PermanentIngestError("pdf_not_found");
   }
