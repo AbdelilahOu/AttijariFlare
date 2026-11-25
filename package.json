@@ -28,6 +28,7 @@
     "check-types": "vp run -r check-types",
     "check": "vp check && vp run -r check-types",
     "lint": "vp lint",
+    "test": "vp test run",
     "format": "vp fmt",
     "staged": "vp staged",
     "hooks:setup": "vp config",
