@@ -472,12 +472,17 @@ function NeedsReviewCard() {
               <Show when={data().transactions.total > 0}>
                 <ReviewSection
                   title={`Uncategorized or low confidence (${data().transactions.total})`}
+                  href="/transactions"
+                  linkLabel="Review transactions"
                 >
                   <For each={data().transactions.items}>
                     {(row) => (
                       <li class="flex items-baseline justify-between gap-2">
                         <span class="truncate">
-                          <span class="tabular-nums">{row.bookingDate}</span> {row.descriptionRaw}
+                          <span class="tabular-nums">{row.bookingDate}</span>{" "}
+                          <a class="underline" href="/transactions">
+                            {row.descriptionRaw}
+                          </a>
                           <span class="block text-xs text-neutral-500">
                             {row.reason === "uncategorized"
                               ? "No category"
