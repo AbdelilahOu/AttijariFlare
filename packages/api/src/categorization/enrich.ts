@@ -56,6 +56,8 @@ export type EnrichResult = {
   newMerchants: number;
   embedded: number;
   knnQueries: number;
+  /** kNN queries that returned at least one confirmed merchant (any similarity). */
+  knnHits: number;
   llmCalls: number;
   /** Rows categorized in this run, by how. "merchant" rows are stored with source vector. */
   categorized: { merchant: number; vector: number; llm: number };
@@ -170,6 +172,7 @@ export async function enrichStatement(
     newMerchants: 0,
     embedded: 0,
     knnQueries: 0,
+    knnHits: 0,
     llmCalls: 0,
     categorized: { merchant: 0, vector: 0, llm: 0 },
     alreadyCategorized: 0,
@@ -326,6 +329,7 @@ export async function enrichStatement(
         filter: { user_id: userId, confirmed: true },
         returnMetadata: "all",
       });
+      if (response.matches.length > 0) result.knnHits += 1;
       const decision = decideFromNeighbours(
         response.matches.map((match) =>
           toNeighbourMatch({ score: match.score, metadata: match.metadata ?? null }),
