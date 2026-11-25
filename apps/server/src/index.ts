@@ -1,10 +1,17 @@
 import { appRouter } from "@finance-ttijari/api/routers/index";
+import {
+  StatementError,
+  MAX_STATEMENT_BYTES,
+  createStatement,
+  getStatementPdf,
+  statementErrorStatus,
+} from "@finance-ttijari/api/statements";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import { Hono } from "hono";
+import { type Context as HonoContext, Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
@@ -28,6 +35,76 @@ app.use(
 );
 
 app.on(["POST", "GET"], "/api/auth/*", async (c) => (await createAuth()).handler(c.req.raw));
+
+// Statement upload and "view source" live on plain Hono routes: the browser sends the upload
+// with XMLHttpRequest to get progress events, and the PDF opens directly in a new tab.
+async function statementDeps(c: HonoContext) {
+  const context = await createContext({ context: c });
+  const userId = context.session?.user.id;
+  if (!userId) return null;
+  return { db: context.db, env: context.env, userId };
+}
+
+function statementErrorResponse(c: HonoContext, error: unknown) {
+  if (error instanceof StatementError) {
+    return c.json(
+      { code: error.code, message: error.message, existingId: error.existingId },
+      statementErrorStatus[error.code],
+    );
+  }
+  throw error;
+}
+
+app.post("/api/statements", async (c) => {
+  const deps = await statementDeps(c);
+  if (!deps) return c.json({ code: "UNAUTHORIZED", message: "Sign in first." }, 401);
+
+  const declaredLength = Number(c.req.header("content-length") ?? 0);
+  if (declaredLength > MAX_STATEMENT_BYTES + 64 * 1024) {
+    return statementErrorResponse(
+      c,
+      new StatementError("PAYLOAD_TOO_LARGE", "The file is too large."),
+    );
+  }
+
+  let form: FormData;
+  try {
+    form = await c.req.formData();
+  } catch {
+    return c.json({ code: "BAD_REQUEST", message: "Expected a multipart form body." }, 400);
+  }
+  const file = form.get("file");
+  if (!(file instanceof File)) {
+    return c.json({ code: "BAD_REQUEST", message: "Missing the `file` field." }, 400);
+  }
+
+  try {
+    const statement = await createStatement(deps, file);
+    return c.json(statement, 201);
+  } catch (error) {
+    return statementErrorResponse(c, error);
+  }
+});
+
+app.get("/api/statements/:id/original", async (c) => {
+  const deps = await statementDeps(c);
+  if (!deps) return c.json({ code: "UNAUTHORIZED", message: "Sign in first." }, 401);
+
+  try {
+    const { object, fileName } = await getStatementPdf(deps, c.req.param("id"));
+    return new Response(object.body, {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Length": String(object.size),
+        "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+        "Cache-Control": "private, no-store",
+        "X-Content-Type-Options": "nosniff",
+      },
+    });
+  } catch (error) {
+    return statementErrorResponse(c, error);
+  }
+});
 
 export const apiHandler = new OpenAPIHandler(appRouter, {
   plugins: [
