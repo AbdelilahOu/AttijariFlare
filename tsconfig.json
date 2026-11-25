@@ -1,0 +1,3 @@
+{
+  "extends": "@finance-ttijari/config/tsconfig.base.json"
+}

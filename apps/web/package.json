@@ -1,0 +1,40 @@
+{
+  "name": "web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b ../../packages/api && vp build",
+    "check-types": "tsc -b ../../packages/api && tsc --noEmit",
+    "start": "vp preview",
+    "preview": "vp preview",
+    "dev:bare": "vp dev",
+    "env:generate": "varlock codegen"
+  },
+  "dependencies": {
+    "@finance-ttijari/api": "workspace:*",
+    "@finance-ttijari/auth": "workspace:*",
+    "@orpc/client": "catalog:",
+    "@orpc/server": "catalog:",
+    "@orpc/tanstack-query": "^1.16.2",
+    "@solidjs/meta": "^2.0.0",
+    "@solidjs/router": "^2.0.0",
+    "@solidjs/web": "^2.0.0",
+    "@tanstack/query-core": "5.107.1",
+    "@tanstack/solid-query": "6.0.0-rc.6",
+    "solid-js": "^2.0.0",
+    "varlock": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@finance-ttijari/config": "workspace:*",
+    "@solidjs/vite-plugin": "^3.0.1",
+    "@tailwindcss/vite": "^4.3.5",
+    "filesystem-routing": "0.5.0",
+    "tailwindcss": "^4.3.5",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

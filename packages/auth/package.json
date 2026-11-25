@@ -1,0 +1,24 @@
+{
+  "name": "@finance-ttijari/auth",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "check-types": "tsc -b"
+  },
+  "dependencies": {
+    "@better-auth/core": "1.7.22",
+    "@better-auth/drizzle-adapter": "1.7.22",
+    "@finance-ttijari/db": "workspace:*",
+    "better-auth": "catalog:",
+    "drizzle-orm": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@finance-ttijari/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

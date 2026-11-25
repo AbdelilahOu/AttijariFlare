@@ -1,0 +1,25 @@
+{
+  "name": "@finance-ttijari/api",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "check-types": "tsc -b"
+  },
+  "dependencies": {
+    "@finance-ttijari/auth": "workspace:*",
+    "@finance-ttijari/db": "workspace:*",
+    "@orpc/client": "catalog:",
+    "@orpc/openapi": "catalog:",
+    "@orpc/server": "catalog:",
+    "@orpc/zod": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@finance-ttijari/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

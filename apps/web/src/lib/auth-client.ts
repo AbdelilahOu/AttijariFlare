@@ -1,0 +1,16 @@
+import { createSignal, onSettled } from "solid-js";
+
+import { authClient } from "../client";
+
+export { authClient };
+
+export function useSession() {
+  // Start from the pending state the server rendered so hydration matches, then follow the store
+  const [session, setSession] = createSignal<ReturnType<typeof authClient.useSession.get>>({
+    ...authClient.useSession.get(),
+    data: null,
+    isPending: true,
+  });
+  onSettled(() => authClient.useSession.subscribe(setSession));
+  return session;
+}
