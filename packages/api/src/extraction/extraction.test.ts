@@ -12,6 +12,7 @@ import { fingerprintTransactions, normalizeDescription } from "./fingerprint";
 import { parseAmountToCentimes } from "./money";
 import { buildChunkMessages } from "./prompt";
 import { reconcile } from "./reconcile";
+import { isExtractionStale, STALE_EXTRACTION_MS } from "./stale";
 import { chunkExtractionSchema, type ExtractedTransaction, normalizeDate } from "./schema";
 
 // All fixtures are made up.
@@ -362,5 +363,17 @@ describe("extractStatement", () => {
       chunkExtractionSchema.parse(answer({ opening_balance: 3, closing_balance: 4 })),
     ];
     expect(mergeChunks(parsed)).toMatchObject({ openingBalance: 100, closingBalance: 400 });
+  });
+});
+
+describe("isExtractionStale", () => {
+  const now = new Date("2026-11-25T12:00:00Z");
+
+  it("keeps a recent run", () => {
+    expect(isExtractionStale(new Date(now.getTime() - 60_000), now)).toBe(false);
+  });
+
+  it("treats a run untouched for the threshold as stuck", () => {
+    expect(isExtractionStale(new Date(now.getTime() - STALE_EXTRACTION_MS), now)).toBe(true);
   });
 });

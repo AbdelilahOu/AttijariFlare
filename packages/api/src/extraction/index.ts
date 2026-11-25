@@ -5,3 +5,4 @@ export * from "./money";
 export * from "./prompt";
 export * from "./reconcile";
 export * from "./schema";
+export * from "./stale";
