@@ -2,9 +2,11 @@ import type { RouterClient } from "@orpc/server";
 
 import { protectedProcedure, publicProcedure } from "../index";
 import { allocationsRouter } from "./allocations";
+import { extractionRouter } from "./extraction";
 import { statementsRouter } from "./statements";
 
 export const appRouter = {
+  extraction: extractionRouter,
   healthCheck: publicProcedure.handler(() => {
     return "OK";
   }),
