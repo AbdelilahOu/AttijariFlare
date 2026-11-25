@@ -21,7 +21,7 @@ follows the system; the account menu can pin light or dark (`data-theme` on `<ht
 | `ink` / `ink-soft` / `ink-faint` | #222 / #595959 / #6e6e6e | #f2f2f2 / #b3b3b3 / #8f8f8f | Text levels                                                          |
 | `rule` / `rule-strong`           | #e2e2e2 / #c8c8c8        | #2c2c2c / #404040           | Hairlines, control borders                                           |
 | `flare`                          | #f6821f                  | #f6821f                     | Brand orange: primary buttons, active nav, money-out bars, guilloche |
-| `flare-ink`                      | #1b1b1b                  | #1b1b1b                     | Text on orange fills (AA contrast)                                   |
+| `flare-ink`                      | #ffffff                  | #ffffff                     | Text on orange fills (hover darkens to #e06c0c)                      |
 | `action`                         | #b34a00                  | #fbad41                     | Orange for text, links, focus rings, selection                       |
 | `action-tint` / `flare-tint`     | #fdeedc                  | #3a2410                     | Selected and active backgrounds                                      |
 | `rail`                           | #262626                  | #222222                     | Charcoal brand surface: ledger strip, landing hero, sign-in panel    |

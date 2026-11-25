@@ -8,8 +8,8 @@
 :root {
   color-scheme: light dark;
 
-  /* Cloudflare palette: neutral grays and brand orange. Orange fills carry dark text so
-     labels keep AA contrast; --action is a deeper orange for text, borders and focus. */
+  /* Cloudflare palette: neutral grays and brand orange. Orange fills carry white text, as
+     on Cloudflare's own buttons; --action is a deeper orange for text, borders and focus. */
   --paper: light-dark(#f7f7f7, #141414);
   --paper-raised: light-dark(#ffffff, #1d1d1d);
   --paper-sunken: light-dark(#efefef, #0f0f0f);
@@ -26,7 +26,8 @@
   --flare: #f6821f;
   --flare-soft: #fbad41;
   --flare-tint: light-dark(#fdeedc, #3a2410);
-  --flare-ink: #1b1b1b;
+  --flare-ink: #ffffff;
+  --flare-strong: #e06c0c;
 
   --sidebar: light-dark(#ffffff, #1a1a1a);
   --sidebar-ink: light-dark(#222222, #f2f2f2);
@@ -95,6 +96,7 @@
   --color-flare-soft: var(--flare-soft);
   --color-flare-tint: var(--flare-tint);
   --color-flare-ink: var(--flare-ink);
+  --color-flare-strong: var(--flare-strong);
   --color-sidebar: var(--sidebar);
   --color-sidebar-ink: var(--sidebar-ink);
   --color-sidebar-ink-soft: var(--sidebar-ink-soft);
@@ -205,7 +207,7 @@
 }
 
 @utility btn-primary {
-  @apply btn bg-flare text-flare-ink hover:bg-flare-soft;
+  @apply btn bg-flare text-flare-ink hover:bg-flare-strong;
 }
 
 @utility btn-quiet {

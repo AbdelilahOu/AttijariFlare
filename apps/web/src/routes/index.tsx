@@ -81,12 +81,12 @@ export default function Home() {
               <Show
                 when={!session().isPending && session().data}
                 fallback={
-                  <a href="/login" class="btn bg-flare text-[#1b1b1b] hover:bg-flare-soft">
+                  <a href="/login" class="btn-primary">
                     Sign in
                   </a>
                 }
               >
-                <a href="/dashboard" class="btn bg-flare text-[#1b1b1b] hover:bg-flare-soft">
+                <a href="/dashboard" class="btn-primary">
                   Open dashboard
                 </a>
               </Show>
