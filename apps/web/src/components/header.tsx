@@ -8,6 +8,8 @@ export default function Header() {
     { to: "/dashboard", label: "Dashboard" },
     { to: "/upload", label: "Statements" },
     { to: "/withdrawals", label: "Withdrawals" },
+    { to: "/transactions", label: "Transactions" },
+    { to: "/categories", label: "Categories" },
   ];
 
   return (

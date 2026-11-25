@@ -66,6 +66,20 @@ export default Alchemy.Stack(
     const ingestDlq = yield* statementIngestDlq;
     const enrichQueue = yield* txnEnrich;
     const enrichDlq = yield* txnEnrichDlq;
+    const merchantIndex = yield* merchants;
+
+    // kNN in the enrich consumer filters on these metadata properties. Vectors written before
+    // an index exists are not indexed, so they are created with the stack.
+    yield* Cloudflare.Vectorize.MetadataIndex("merchants-user-id", {
+      indexName: merchantIndex.indexName,
+      propertyName: "user_id",
+      indexType: "string",
+    });
+    yield* Cloudflare.Vectorize.MetadataIndex("merchants-confirmed", {
+      indexName: merchantIndex.indexName,
+      propertyName: "confirmed",
+      indexType: "boolean",
+    });
 
     // The server worker is the only consumer of both queues. Dead-letter queues are not
     // consumed (that would spend Queues operations); inspect them in the dashboard.
