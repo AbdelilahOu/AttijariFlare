@@ -1,8 +1,8 @@
 import type { Context as ApiContext } from "@finance-ttijari/api/context";
 import type { Context as HonoContext } from "hono";
 
-import { getDb } from "./services";
-import { createAuth } from "./services";
+import { ENV } from "./env.server";
+import { createAuth, getDb } from "./services";
 
 export type CreateContextOptions = {
   context: HonoContext;
@@ -18,6 +18,7 @@ export async function createContext({ context }: CreateContextOptions): Promise<
   return {
     db,
     session,
+    env: ENV,
   };
 }
 
