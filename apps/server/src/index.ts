@@ -8,8 +8,10 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 
+import type { CloudflareEnv } from "../cloudflare-env";
 import { createContext } from "./context";
 import { ENV } from "./env.server";
+import { queue } from "./queues";
 import { createAuth } from "./services";
 
 const app = new Hono();
@@ -76,4 +78,7 @@ app.get("/", (c) => {
   return c.text("OK");
 });
 
-export default app;
+export default {
+  fetch: app.fetch,
+  queue,
+} satisfies ExportedHandler<CloudflareEnv>;

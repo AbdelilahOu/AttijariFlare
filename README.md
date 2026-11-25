@@ -46,6 +46,40 @@ bun run dev
 Open [http://localhost:3001](http://localhost:3001) in your browser to see the web application.
 The API is running at [http://localhost:3000](http://localhost:3000).
 
+## Cloudflare Resources
+
+`packages/infra/alchemy.run.ts` provisions everything; do not create resources with wrangler or the dashboard.
+
+| Binding            | Resource                                              | Used for                                              |
+| ------------------ | ----------------------------------------------------- | ----------------------------------------------------- |
+| `DB`               | D1 database                                           | All application data                                  |
+| `STATEMENTS`       | R2 bucket `statements`                                | `statements/{id}/original.pdf` and extraction outputs |
+| `STATEMENT_INGEST` | Queue `statement-ingest` (DLQ `statement-ingest-dlq`) | Upload to AI extraction                               |
+| `TXN_ENRICH`       | Queue `txn-enrich` (DLQ `txn-enrich-dlq`)             | Extraction to categorization                          |
+| `VECTORIZE`        | Vectorize index `merchants` (1024 dims, cosine)       | Merchant embeddings from `@cf/baai/bge-m3`            |
+| `AI`               | Workers AI                                            | `toMarkdown`, LLM extraction, embeddings              |
+
+The server worker is the consumer of both queues (batch size 1, concurrency 1, 3 retries, then the DLQ). Its `queue()` export dispatches on `STATEMENT_INGEST_QUEUE_NAME` / `TXN_ENRICH_QUEUE_NAME`, because Alchemy gives each queue a physical name with the stage and a random suffix. Dead-letter queues have no consumer; inspect them in the dashboard.
+
+Routers get the bindings as `context.env` (typed by `packages/api/src/bindings.ts`), queue handlers as their `env` argument.
+
+### Free-tier limits
+
+Checked against the Cloudflare docs on 2026-11-25. The whole app must stay inside these.
+
+| Product    | Free limit                                                                                                                                                                                                 |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Workers    | 100,000 requests/day; 10 ms CPU per HTTP request; 50 subrequests per invocation; 128 MB memory                                                                                                             |
+| Queues     | 10,000 operations/day (one per 64 KB written, read or deleted; a normal delivery is 3, each retry adds 1); 24 h retention, not configurable; 128 KB per message; 15 min wall clock per consumer invocation |
+| Workers AI | 10,000 neurons/day (resets 00:00 UTC). `bge-m3` costs 1,075 neurons per million input tokens. `toMarkdown` is free for PDFs (only image conversion uses models)                                            |
+| Vectorize  | 5 million stored dimensions (about 4,880 vectors at 1024 dims); 30 million queried dimensions/month; 100 indexes                                                                                           |
+| R2         | 10 GB-month storage; 1 million Class A and 10 million Class B operations/month; free egress                                                                                                                |
+| D1         | 5 million rows read/day; 100,000 rows written/day; 500 MB per database, 5 GB total; 10 databases; 50 queries per invocation                                                                                |
+
+Sources: [Workers limits](https://developers.cloudflare.com/workers/platform/limits/), [Queues pricing](https://developers.cloudflare.com/queues/platform/pricing/) and [limits](https://developers.cloudflare.com/queues/platform/limits/), [Workers AI pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/), [Markdown conversion](https://developers.cloudflare.com/workers-ai/features/markdown-conversion/), [Vectorize pricing](https://developers.cloudflare.com/vectorize/platform/pricing/) and [limits](https://developers.cloudflare.com/vectorize/platform/limits/), [R2 pricing](https://developers.cloudflare.com/r2/pricing/), [D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/) and [limits](https://developers.cloudflare.com/d1/platform/limits/).
+
+Open question: the Queues limits page lists a 30 s default consumer CPU limit with no free-plan figure, while the Workers page lists 10 ms for HTTP requests. Assume 10 ms until measured; consumers spend most of their time waiting on AI calls, which does not count as CPU.
+
 ## Environment Configuration
 
 Each app owns its environment schema in `.env.schema`. Varlock generates `src/env.ts` during installation; run `bun run env:generate` after changing a schema. Commit schemas, and keep secrets in ignored env files or your deployment platform.
