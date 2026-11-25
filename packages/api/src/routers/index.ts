@@ -3,6 +3,7 @@ import type { RouterClient } from "@orpc/server";
 import { protectedProcedure, publicProcedure } from "../index";
 import { allocationsRouter } from "./allocations";
 import { extractionRouter } from "./extraction";
+import { reportsRouter } from "./reports";
 import { statementsRouter } from "./statements";
 
 export const appRouter = {
@@ -17,6 +18,7 @@ export const appRouter = {
     };
   }),
   allocations: allocationsRouter,
+  reports: reportsRouter,
   statements: statementsRouter,
 };
 export type AppRouter = typeof appRouter;
