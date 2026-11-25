@@ -4,9 +4,10 @@
   "type": "module",
   "scripts": {
     "check-types": "tsc --noEmit",
-    "dev": "alchemy dev",
-    "deploy": "alchemy deploy",
-    "destroy": "alchemy destroy"
+    "dev": "alchemy dev --config alchemy.dev.ts",
+    "deploy:preview": "alchemy deploy --config alchemy.preview.ts --yes",
+    "destroy:preview": "alchemy destroy --config alchemy.preview.ts --yes",
+    "deploy:prod": "alchemy deploy --config alchemy.prod.ts --stage prod --yes"
   },
   "dependencies": {
     "zod": "catalog:"

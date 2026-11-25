@@ -41,7 +41,10 @@ export function createAuth(
     baseURL: env.BETTER_AUTH_URL,
     advanced: {
       defaultCookieAttributes: {
-        sameSite: "none",
+        // Web and API share the registrable domain (ar7al.dev, or localhost in dev), so requests
+        // from the web app to the API are same-site and Lax cookies are sent. The cookie has no
+        // Domain attribute, so it stays host-only on the API hostname of its own stage.
+        sameSite: "lax",
         secure: true,
         httpOnly: true,
       },

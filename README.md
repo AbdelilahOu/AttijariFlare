@@ -27,9 +27,9 @@ bun install
 
 This project uses Cloudflare D1 (SQLite) with Drizzle ORM.
 
-Runtime database access uses the Cloudflare `DB` binding from `packages/infra/alchemy.run.ts`. If a local `DATABASE_URL` is present, it is only for database tooling.
+Runtime database access uses the Cloudflare `DB` binding from the `packages/infra/alchemy.*.ts` entry files. If a local `DATABASE_URL` is present, it is only for database tooling.
 
-Alchemy provisions the D1 database and applies migrations during `deploy`.
+Alchemy provisions the D1 database and applies migrations during deploys.
 
 1. Generate migration files:
 
@@ -48,7 +48,7 @@ The API is running at [http://localhost:3000](http://localhost:3000).
 
 ## Cloudflare Resources
 
-`packages/infra/alchemy.run.ts` provisions everything; do not create resources with wrangler or the dashboard.
+The `packages/infra/alchemy.*.ts` entry files provision everything; do not create resources with wrangler or the dashboard.
 
 | Binding            | Resource                                              | Used for                                              |
 | ------------------ | ----------------------------------------------------- | ----------------------------------------------------- |
@@ -94,25 +94,64 @@ Run standalone Node/Bun tools that use Varlock from the owning app directory so 
 
 ## Deployment
 
-### Alchemy
+There is one Alchemy entry file per stage in `packages/infra`, selected with `alchemy --config`. Each one holds the whole stack (they are deliberately duplicated, so keep them in sync when you add a resource). Alchemy puts the stage into every physical resource name, so each stage has its own D1 database, R2 bucket, queues, DLQs, Vectorize index and metadata indexes.
 
-- Target: web on Cloudflare + server on Cloudflare
-- Configure provider accounts: `cd packages/infra && bunx alchemy profile edit`
-- Dev: bun run dev
-- Deploy: bun run deploy
-- Destroy: bun run destroy
+| Stage        | Entry file           | Web                                | API                                    | Runs from                          |
+| ------------ | -------------------- | ---------------------------------- | -------------------------------------- | ---------------------------------- |
+| `dev_<user>` | `alchemy.dev.ts`     | `http://localhost:3001`            | `http://localhost:3000`                | `bun run dev`, local only          |
+| `pr-<n>`     | `alchemy.preview.ts` | `https://finance-pr-<n>.ar7al.dev` | `https://finance-pr-<n>-api.ar7al.dev` | `.github/workflows/preview.yml`    |
+| `prod`       | `alchemy.prod.ts`    | `https://finance.ar7al.dev`        | `https://finance-api.ar7al.dev`        | `.github/workflows/production.yml` |
 
-`alchemy profile edit` stores the selected Axiom, Cloudflare, Neon, PlanetScale, and/or Prisma provider profiles under `~/.alchemy`; no provider-specific setup command is required by this scaffold.
+Hostnames use one subdomain level only, because the free Universal SSL certificate covers `*.ar7al.dev` and nothing deeper. They are Workers custom domains on the `ar7al.dev` zone; Cloudflare creates the DNS records and certificates. Deployed stages derive `CORS_ORIGIN` from the web hostname, and `BETTER_AUTH_URL` and the web's `VITE_SERVER_URL` from the API worker's URL, so none of them are configured by hand.
 
-Deploys are staged and default to a personal `dev_<username>` stage. For production, run the deploy with an explicit stage from `packages/infra`:
+### Local development
+
+`bun run dev` runs `alchemy dev --config alchemy.dev.ts`. It never deploys (the entry refuses to run outside `alchemy dev`), has no custom domains, and reads `BETTER_AUTH_SECRET`, `CORS_ORIGIN` and `SINGLE_USER` from `apps/server/.env` through Varlock. Connect your Cloudflare account once with `packages/infra/node_modules/.bin/alchemy profile edit` (OAuth).
+
+### Previews
+
+`preview.yml` deploys stage `pr-<n>` when a pull request is opened, pushed to, reopened or marked ready for review (drafts are skipped), and keeps one comment on the pull request with the URLs up to date. When the pull request closes (merged or not) it destroys the stage. Each pull request has its own concurrency group. Pull requests from forks are skipped because they get no secrets.
+
+### Production
+
+`production.yml` deploys stage `prod` on every push to `main`, in the GitHub `production` environment. Deploys queue in one concurrency group and are never cancelled. D1 migrations from `packages/db/src/migrations` are applied by Alchemy during the deploy. Never deploy production from a local machine; `alchemy.prod.ts` refuses to run outside GitHub Actions.
+
+Both workflows run `bun run check` and `bun run test` before deploying.
+
+### State
+
+`Cloudflare.state()` keeps Alchemy state in a state-store Worker on the Cloudflare account, so CI and local runs share the same state for each stage.
+
+### Secrets
+
+Secrets live in GitHub Actions secrets and are never committed. Set them with the CLI and pipe the value so it is never printed:
+
+| Secret                       | Scope                    | Value                               |
+| ---------------------------- | ------------------------ | ----------------------------------- |
+| `CLOUDFLARE_API_TOKEN`       | Repository               | Cloudflare API token (see below)    |
+| `CLOUDFLARE_ACCOUNT_ID`      | Repository               | Cloudflare account id               |
+| `BETTER_AUTH_SECRET_PREVIEW` | Repository               | Random value shared by all previews |
+| `BETTER_AUTH_SECRET`         | `production` environment | Random value for production only    |
 
 ```bash
-cd packages/infra && bunx alchemy deploy --stage production
+openssl rand -base64 48 | tr -d '
+' | gh secret set BETTER_AUTH_SECRET_PREVIEW
+openssl rand -base64 48 | tr -d '
+' | gh secret set BETTER_AUTH_SECRET --env production
+gh secret set CLOUDFLARE_ACCOUNT_ID   # paste the account id, or pipe it from `cf`
+gh secret set CLOUDFLARE_API_TOKEN    # paste the token when prompted
 ```
 
-### Production origins
+Create the API token in the Cloudflare dashboard (My Profile, API Tokens, Create Custom Token) with these permissions:
 
-- Required after the first deploy: set `CORS_ORIGIN` in `apps/server/.env` to the exact deployed web origin, such as `https://app.example.com`, then deploy the server again.
+- Account: Workers Scripts Edit, D1 Edit, Workers R2 Storage Edit, Queues Edit, Vectorize Edit, Workers AI Read, Secrets Store Edit (the Alchemy state store), Account Settings Read
+- Zone `ar7al.dev` only: Workers Routes Edit, Zone Read, DNS Edit
+
+Non-secret settings (`CORS_ORIGIN`, `SINGLE_USER`) come from the stage in code and are not stored as secrets.
+
+### Free-tier notes
+
+The free plan allows 10 D1 databases per account. Production plus every open pull request preview must stay under that (local dev uses a local D1). Previews are destroyed when their pull request closes, and the preview workflow prints a clear error when Cloudflare refuses to create a database because of the limit. Nothing here uses paid features.
 
 ## Git Hooks and Formatting
 
