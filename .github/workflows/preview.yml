@@ -1,10 +1,10 @@
 name: Preview
 
 # One preview stage per pull request: pr-<number> on finance-pr-<number>.ar7al.dev.
-# Deployed on open, push and reopen; destroyed when the pull request closes (merged or not).
+# Deployed on open, push, reopen and ready-for-review (draft pull requests are skipped); destroyed when the pull request closes (merged or not).
 on:
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, synchronize, reopened, ready_for_review, closed]
 
 # One group per pull request. A newer push cancels an older deploy; teardown is never cancelled
 # because the closed event runs in the same group after any deploy in flight.
@@ -28,8 +28,11 @@ env:
 jobs:
   deploy:
     name: Deploy preview
-    # Fork pull requests get no secrets, so they cannot deploy.
-    if: github.event.action != 'closed' && github.event.pull_request.head.repo.full_name == github.repository
+    # Fork pull requests get no secrets, so they cannot deploy. Drafts do not deploy either.
+    if: >-
+      github.event.action != 'closed' &&
+      !github.event.pull_request.draft &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

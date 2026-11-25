@@ -110,7 +110,7 @@ Hostnames use one subdomain level only, because the free Universal SSL certifica
 
 ### Previews
 
-`preview.yml` deploys stage `pr-<n>` when a pull request is opened, pushed to or reopened, and keeps one comment on the pull request with the URLs up to date. When the pull request closes (merged or not) it destroys the stage. Each pull request has its own concurrency group. Pull requests from forks are skipped because they get no secrets.
+`preview.yml` deploys stage `pr-<n>` when a pull request is opened, pushed to, reopened or marked ready for review (drafts are skipped), and keeps one comment on the pull request with the URLs up to date. When the pull request closes (merged or not) it destroys the stage. Each pull request has its own concurrency group. Pull requests from forks are skipped because they get no secrets.
 
 ### Production
 
