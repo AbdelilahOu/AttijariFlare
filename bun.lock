@@ -47,6 +47,7 @@
       "dependencies": {
         "@finance-ttijari/api": "workspace:*",
         "@finance-ttijari/auth": "workspace:*",
+        "@fontsource-variable/readex-pro": "^5.3.0",
         "@orpc/client": "catalog:",
         "@orpc/server": "catalog:",
         "@orpc/tanstack-query": "^1.16.2",
@@ -55,6 +56,7 @@
         "@solidjs/web": "^2.0.0",
         "@tanstack/query-core": "5.107.1",
         "@tanstack/solid-query": "6.0.0-rc.6",
+        "lucide": "^1.80.0",
         "solid-js": "^2.0.0",
         "varlock": "catalog:",
         "zod": "catalog:",
@@ -249,6 +251,8 @@
     "@finance-ttijari/db": ["@finance-ttijari/db@workspace:packages/db"],
 
     "@finance-ttijari/infra": ["@finance-ttijari/infra@workspace:packages/infra"],
+
+    "@fontsource-variable/readex-pro": ["@fontsource-variable/readex-pro@5.3.0", "", {}, "sha512-ebrEcz8sjzQk92x6K3WtYzOgEKTIDe5D+iPqef0YYvPdqCfxzVkRgpsog5POX4sWa7e4wccCQ1IhmMuRka2hZg=="],
 
     "@img/colour": ["@img/colour@1.1.0", "", {}, "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ=="],
 
@@ -873,6 +877,8 @@
     "lightningcss-win32-arm64-msvc": ["lightningcss-win32-arm64-msvc@1.33.0", "", { "os": "win32", "cpu": "arm64" }, "sha512-1K+MPfLSFVpphzpdbfkhlWk6wBrTObBzS2T6db10PNOZgR9GoVsAWzwNyuhUYYbTp23j+4RrncfujZ4uAzXvwA=="],
 
     "lightningcss-win32-x64-msvc": ["lightningcss-win32-x64-msvc@1.33.0", "", { "os": "win32", "cpu": "x64" }, "sha512-OlEICDx/Xl0FqSp4bry8zFnCvGpig3Gl4gCquvYwHuqJKEC1+n9NgDniFvqHGmMv1ZkqDJrDqKKSykTDX+ehuA=="],
+
+    "lucide": ["lucide@1.80.0", "", {}, "sha512-3tsjW2GIkBNMYHlpnOUA4bP5jAh20iRHksM92tSsCzu24BktkK103HJfOqPybqJtDgYnY5NEf6LEyBiq0N+KjA=="],
 
     "lz-string": ["lz-string@1.5.0", "", { "bin": { "lz-string": "bin/bin.js" } }, "sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ=="],
 

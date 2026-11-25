@@ -1,70 +1,39 @@
-import { useNavigate } from "@solidjs/router";
 import { useQuery } from "@tanstack/solid-query";
-import { createEffect, createMemo, createSignal, type Element, For, Show } from "solid-js";
-
+import type { IconNode } from "lucide";
 import {
-  type BarItem,
-  CategoryBars,
-  MonthlyChart,
-  formatMad,
-  formatMonth,
-} from "~/components/report-charts";
-import { useSession } from "~/lib/auth-client";
+  Banknote,
+  CircleCheck,
+  FileSearch,
+  FileText,
+  FileUp,
+  Scale,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
+} from "lucide";
+import { createMemo, createSignal, type Element, For, Show } from "solid-js";
+
+import Guilloche from "~/components/guilloche";
+import Icon from "~/components/icon";
+import { type BarItem, CategoryBars, MonthlyChart } from "~/components/report-charts";
+import {
+  EmptyState,
+  ErrorNotice,
+  Money,
+  PageHeader,
+  RequireSession,
+  Section,
+  SkeletonRows,
+  StatusBadge,
+} from "~/components/ui";
+import { formatDayMonth, formatMad, formatMonth, formatPeriod, plural } from "~/lib/format";
 import { orpc } from "~/utils/orpc";
 
-type StatementStatus = "uploaded" | "extracting" | "parsed" | "needs_review" | "failed";
-
-const statusLabels: Record<StatementStatus, string> = {
-  uploaded: "Queued",
-  extracting: "Extracting",
-  parsed: "Parsed",
-  needs_review: "Needs review",
-  failed: "Failed",
-};
-
-const statusClasses: Record<StatementStatus, string> = {
-  uploaded: "bg-neutral-500/20",
-  extracting: "bg-sky-500/20 text-sky-700 dark:text-sky-300",
-  parsed: "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300",
-  needs_review: "bg-amber-500/20 text-amber-700 dark:text-amber-300",
-  failed: "bg-rose-500/20 text-rose-700 dark:text-rose-300",
-};
-
-function StatusBadge(props: { status: StatementStatus }) {
-  return (
-    <span class={`rounded px-2 py-0.5 text-xs font-medium ${statusClasses[props.status]}`}>
-      {statusLabels[props.status]}
-    </span>
-  );
-}
-
-function Card(props: { title: string; action?: Element; children: Element }) {
-  return (
-    <section class="space-y-3 rounded-lg border border-neutral-500/30 p-4">
-      <div class="flex flex-wrap items-center justify-between gap-2">
-        <h2 class="font-semibold">{props.title}</h2>
-        {props.action}
-      </div>
-      {props.children}
-    </section>
-  );
-}
-
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const session = useSession();
-
-  createEffect(
-    () => !session().isPending && !session().data,
-    (shouldRedirect) => {
-      if (shouldRedirect) navigate("/login", { replace: true });
-    },
-  );
-
   return (
-    <Show when={!session().isPending && session().data} fallback={<p>Loading...</p>}>
+    <RequireSession>
       <DashboardPage />
-    </Show>
+    </RequireSession>
   );
 }
 
@@ -119,87 +88,121 @@ function DashboardPage() {
   };
 
   return (
-    <div class="mx-auto w-full max-w-5xl space-y-4 p-4">
-      <div class="flex flex-wrap items-end justify-between gap-3">
-        <h1 class="text-2xl font-bold">Dashboard</h1>
-        <Show when={months().length > 0 && selected()}>
-          {(r) => (
-            <div class="flex flex-wrap items-center gap-2 text-sm">
-              <label class="flex items-center gap-1">
-                From
-                <MonthSelect months={months()} value={r().from} onChange={setFrom} />
-              </label>
-              <label class="flex items-center gap-1">
-                To
-                <MonthSelect months={months()} value={r().to} onChange={setTo} />
-              </label>
-            </div>
-          )}
-        </Show>
-      </div>
+    <div class="space-y-10">
+      <PageHeader
+        title="Dashboard"
+        actions={
+          <Show when={months().length > 0 && selected()}>
+            {(r) => (
+              <div class="flex items-end gap-2">
+                <label class="w-36">
+                  <span class="field-label">From</span>
+                  <MonthSelect months={months()} value={r().from} onChange={setFrom} />
+                </label>
+                <label class="w-36">
+                  <span class="field-label">To</span>
+                  <MonthSelect months={months()} value={r().to} onChange={setTo} />
+                </label>
+              </div>
+            )}
+          </Show>
+        }
+      />
 
       <Show when={monthly.isError}>
-        <p class="text-sm text-rose-600">Could not load reports: {monthly.error?.message}</p>
+        <ErrorNotice title="Could not load reports" message={monthly.error?.message} />
       </Show>
 
       <Show
         when={monthly.data && monthly.data.length > 0}
         fallback={
-          <Show when={monthly.data} fallback={<p>Loading...</p>}>
-            <p class="text-sm text-neutral-500">
-              No transactions yet.{" "}
-              <a class="underline" href="/upload">
-                Upload a statement
-              </a>{" "}
-              to get started.
-            </p>
+          <Show when={monthly.data} fallback={<SkeletonRows rows={3} />}>
+            <EmptyState
+              icon={FileUp}
+              title="No transactions yet"
+              action={
+                <a href="/upload" class="btn-primary">
+                  <Icon icon={FileUp} size={18} />
+                  Upload a statement
+                </a>
+              }
+            >
+              Upload an Attijari PDF statement and its transactions show up here once they are
+              extracted.
+            </EmptyState>
           </Show>
         }
       >
-        <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Stat
-            label="Money in"
-            value={formatMad(rangeTotals().moneyIn)}
-            tone="text-emerald-600 dark:text-emerald-400"
-          />
-          <Stat
-            label="Money out"
-            value={formatMad(Math.abs(rangeTotals().moneyOut))}
-            tone="text-rose-600 dark:text-rose-400"
-          />
-          <Stat label="Net" value={formatMad(rangeTotals().net)} />
-          <Stat
-            label="Closing balance"
-            value={
-              rangeTotals().closingBalance === null
-                ? "-"
-                : formatMad(rangeTotals().closingBalance ?? 0)
-            }
-          />
-        </div>
-        <p class="text-xs text-neutral-500">
-          {rangeLabel()}: {rangeTotals().count} transactions. The closing balance comes from the
-          latest statement ending in the range.
-        </p>
+        <section aria-labelledby="ledger-title" class="-mt-4">
+          <h2 id="ledger-title" class="sr-only">
+            Totals for {rangeLabel()}
+          </h2>
+          <div class="relative overflow-hidden rounded-panel bg-rail text-rail-ink">
+            <Guilloche class="pointer-events-none absolute -top-16 -right-16 size-72 text-flare/25" />
+            <dl class="relative grid grid-cols-2 lg:grid-cols-4">
+              <LedgerFigure icon={TrendingUp} label="Money in">
+                <Money centimes={rangeTotals().moneyIn} signed currency={false} />
+              </LedgerFigure>
+              <LedgerFigure icon={TrendingDown} label="Money out">
+                <Money centimes={-Math.abs(rangeTotals().moneyOut)} currency={false} />
+              </LedgerFigure>
+              <LedgerFigure icon={Scale} label="Net">
+                <Money centimes={rangeTotals().net} signed currency={false} />
+              </LedgerFigure>
+              <LedgerFigure icon={Wallet} label="Closing balance">
+                <Show when={rangeTotals().closingBalance !== null} fallback={<span>Unknown</span>}>
+                  <Money centimes={rangeTotals().closingBalance ?? 0} currency={false} />
+                </Show>
+              </LedgerFigure>
+            </dl>
+          </div>
+          <p class="mt-3 text-xs text-ink-soft">
+            {rangeLabel()}, {plural(rangeTotals().count, "transaction")}. Amounts in MAD. The
+            closing balance comes from the latest statement ending in the range.
+          </p>
+        </section>
 
-        <Card title="Monthly totals">
-          <MonthlyChart
-            points={monthly.data ?? []}
-            isSelected={isSelected}
-            onSelect={selectMonth}
-          />
-          <MonthlyTable rows={monthly.data ?? []} isSelected={isSelected} onSelect={selectMonth} />
-        </Card>
+        <Section title="Monthly totals" titleId="monthly-title">
+          <div class="panel p-4 sm:p-5">
+            <MonthlyChart
+              points={monthly.data ?? []}
+              isSelected={isSelected}
+              onSelect={selectMonth}
+            />
+            <details class="group mt-4 border-t border-rule pt-3">
+              <summary class="flex min-h-11 cursor-pointer items-center text-sm font-medium text-action select-none">
+                Show the figures as a table
+              </summary>
+              <MonthlyTable
+                rows={monthly.data ?? []}
+                isSelected={isSelected}
+                onSelect={selectMonth}
+              />
+            </details>
+          </div>
+        </Section>
 
         <Show when={selected()}>
-          {(r) => <SpendCard from={r().from} to={r().to} label={rangeLabel()} />}
+          {(r) => <SpendSection from={r().from} to={r().to} label={rangeLabel()} />}
         </Show>
       </Show>
 
-      <div class="grid gap-4 md:grid-cols-2">
-        <NeedsReviewCard />
-        <StatementsCard />
+      <div class="grid gap-10 lg:grid-cols-2 lg:gap-8 [&>*]:min-w-0">
+        <NeedsReviewSection />
+        <StatementsSection />
       </div>
+    </div>
+  );
+}
+
+function LedgerFigure(props: { icon: IconNode; label: string; children: Element }) {
+  return (
+    <div class="border-rail-line px-4 py-4 odd:border-r nth-[-n+2]:border-b sm:px-6 sm:py-5 lg:border-r lg:border-b-0 lg:last:border-r-0 [&_.text-mint]:text-mint-on-rail">
+      <dt class="flex items-center gap-1.5 text-xs text-rail-ink-soft sm:text-sm">
+        <Icon icon={props.icon} size={16} />
+        {props.label}
+      </dt>
+      <dd class="mt-1.5 text-xl font-semibold tracking-[-0.01em] sm:text-2xl">{props.children}</dd>
     </div>
   );
 }
@@ -211,27 +214,14 @@ function MonthSelect(props: {
 }) {
   return (
     <select
-      class="rounded border border-neutral-500/40 bg-transparent px-2 py-1"
+      class="field-select"
       value={props.value}
       onChange={(event) => props.onChange(event.currentTarget.value)}
     >
       <For each={props.months}>
-        {(month) => (
-          <option value={month} class="text-black">
-            {formatMonth(month)}
-          </option>
-        )}
+        {(month) => <option value={month}>{formatMonth(month)}</option>}
       </For>
     </select>
-  );
-}
-
-function Stat(props: { label: string; value: string; tone?: string }) {
-  return (
-    <div class="rounded-lg border border-neutral-500/30 p-3">
-      <div class="text-xs text-neutral-500">{props.label}</div>
-      <div class={`text-lg font-semibold tabular-nums ${props.tone ?? ""}`}>{props.value}</div>
-    </div>
   );
 }
 
@@ -250,39 +240,52 @@ function MonthlyTable(props: {
   onSelect: (month: string) => void;
 }) {
   return (
-    <div class="overflow-x-auto">
-      <table class="w-full text-left text-sm">
-        <caption class="sr-only">Monthly totals</caption>
-        <thead class="border-b border-neutral-500/30 text-neutral-500">
-          <tr>
-            <th class="py-1 pr-2 font-medium">Month</th>
-            <th class="py-1 pr-2 text-right font-medium">In</th>
-            <th class="py-1 pr-2 text-right font-medium">Out</th>
-            <th class="py-1 pr-2 text-right font-medium">Net</th>
-            <th class="py-1 text-right font-medium">Closing balance</th>
+    <div class="-mx-4 mt-2 overflow-x-auto px-4 sm:-mx-5 sm:px-5">
+      <table class="figures w-full min-w-[34rem] text-left text-sm">
+        <caption class="sr-only">Monthly totals in MAD</caption>
+        <thead class="text-ink-soft">
+          <tr class="border-b border-rule">
+            <th class="py-2 pr-3 font-medium">Month</th>
+            <th class="py-2 pr-3 text-right font-medium">In</th>
+            <th class="py-2 pr-3 text-right font-medium">Out</th>
+            <th class="py-2 pr-3 text-right font-medium">Net</th>
+            <th class="py-2 text-right font-medium">Closing balance</th>
           </tr>
         </thead>
         <tbody>
           <For each={[...props.rows].reverse()}>
             {(row) => (
               <tr
-                class={`border-b border-neutral-500/20 tabular-nums ${props.isSelected(row.month) ? "bg-sky-500/10" : ""}`}
+                class={[
+                  "border-b border-rule transition-colors last:border-0",
+                  { "bg-action-tint": props.isSelected(row.month) },
+                ]}
               >
-                <td class="py-1 pr-2">
+                <td class="py-1 pr-3">
                   <button
                     type="button"
-                    class="underline"
+                    class="link min-h-9"
                     aria-pressed={props.isSelected(row.month) ? "true" : "false"}
                     onClick={() => props.onSelect(row.month)}
                   >
                     {formatMonth(row.month)}
                   </button>
                 </td>
-                <td class="py-1 pr-2 text-right">{formatMad(row.moneyIn)}</td>
-                <td class="py-1 pr-2 text-right">{formatMad(Math.abs(row.moneyOut))}</td>
-                <td class="py-1 pr-2 text-right">{formatMad(row.net)}</td>
+                <td class="py-1 pr-3 text-right">
+                  <Money centimes={row.moneyIn} signed currency={false} />
+                </td>
+                <td class="py-1 pr-3 text-right">
+                  <Money centimes={-Math.abs(row.moneyOut)} currency={false} />
+                </td>
+                <td class="py-1 pr-3 text-right">
+                  <Money centimes={row.net} signed currency={false} />
+                </td>
                 <td class="py-1 text-right">
-                  {row.closingBalance === null ? "-" : formatMad(row.closingBalance)}
+                  {row.closingBalance === null ? (
+                    <span class="text-ink-faint">Unknown</span>
+                  ) : (
+                    <Money centimes={row.closingBalance} currency={false} />
+                  )}
                 </td>
               </tr>
             )}
@@ -293,7 +296,7 @@ function MonthlyTable(props: {
   );
 }
 
-function SpendCard(props: { from: string; to: string; label: string }) {
+function SpendSection(props: { from: string; to: string; label: string }) {
   const spend = useQuery(() =>
     orpc.reports.spendByCategory.queryOptions({ input: { from: props.from, to: props.to } }),
   );
@@ -312,7 +315,7 @@ function SpendCard(props: { from: string; to: string; label: string }) {
         key: "unallocated-cash",
         label: "Unallocated cash",
         amount: data.unallocatedCash,
-        barClass: "bg-amber-500",
+        barClass: "bg-saffron",
         href: "/withdrawals",
         note: "split withdrawals to categorize",
       });
@@ -322,77 +325,99 @@ function SpendCard(props: { from: string; to: string; label: string }) {
         key: "uncategorized",
         label: "Uncategorized",
         amount: data.uncategorized,
-        barClass: "bg-neutral-500",
+        barClass: "bg-ink-faint",
       });
     }
     return bars;
   };
 
   return (
-    <Card
-      title={`Spend by category, ${props.label}`}
+    <Section
+      title={`Spending, ${props.label}`}
+      titleId="spend-title"
       action={
         <Show when={spend.data}>
-          {(data) => <span class="text-sm tabular-nums">Total {formatMad(data().total)}</span>}
+          {(data) => (
+            <span class="text-sm text-ink-soft">
+              Total <Money centimes={data().total} class="font-medium text-ink" />
+            </span>
+          )}
         </Show>
       }
     >
-      <Show when={spend.isError}>
-        <p class="text-sm text-rose-600">Could not load spend: {spend.error?.message}</p>
-      </Show>
-      <Show when={spend.data} fallback={<p class="text-sm">Loading...</p>}>
-        <Show
-          when={items().length > 0}
-          fallback={<p class="text-sm text-neutral-500">No spending in this period.</p>}
-        >
-          <CategoryBars items={items()} total={spend.data?.total ?? 0} />
+      <div class="panel p-4 sm:p-5">
+        <Show when={spend.isError}>
+          <ErrorNotice title="Could not load spending" message={spend.error?.message} />
         </Show>
-      </Show>
-    </Card>
+        <Show when={spend.data} fallback={<SkeletonRows rows={3} />}>
+          <Show
+            when={items().length > 0}
+            fallback={<p class="text-sm text-ink-soft">No spending in this period.</p>}
+          >
+            <CategoryBars items={items()} total={spend.data?.total ?? 0} />
+          </Show>
+        </Show>
+      </div>
+    </Section>
   );
 }
 
-function StatementsCard() {
+function StatementsSection() {
   const statements = useQuery(() => orpc.reports.statements.queryOptions());
   return (
-    <Card
+    <Section
       title="Statements"
+      titleId="statements-title"
       action={
-        <a class="text-sm underline" href="/upload">
+        <a class="link inline-flex min-h-11 items-center gap-1.5 text-sm" href="/upload">
+          <Icon icon={FileUp} size={16} />
           Upload
         </a>
       }
     >
-      <Show when={statements.data} fallback={<p class="text-sm">Loading...</p>}>
+      <Show when={statements.data} fallback={<SkeletonRows rows={3} />}>
         {(rows) => (
           <Show
             when={rows().length > 0}
-            fallback={<p class="text-sm text-neutral-500">No statements yet.</p>}
+            fallback={
+              <EmptyState icon={FileText} title="No statements yet">
+                Uploaded statements appear here with their status.
+              </EmptyState>
+            }
           >
-            <ol class="relative space-y-3 border-l border-neutral-500/30 pl-4">
+            <ol class="relative ml-1.5 space-y-5 border-l border-rule-strong pl-5">
               <For each={rows()}>
                 {(statement) => (
                   <li class="relative">
                     <span
-                      class="absolute top-1.5 -left-[21px] h-2.5 w-2.5 rounded-full bg-neutral-500"
+                      class={[
+                        "absolute top-1.5 -left-[26.5px] size-2.5 rounded-full ring-4 ring-paper",
+                        statement.status === "parsed"
+                          ? "bg-mint"
+                          : statement.status === "failed"
+                            ? "bg-garnet"
+                            : statement.status === "needs_review"
+                              ? "bg-saffron"
+                              : "bg-flare",
+                      ]}
                       aria-hidden="true"
                     />
                     <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
-                      <span class="font-medium tabular-nums">
-                        {statement.periodStart || statement.periodEnd
-                          ? `${statement.periodStart ?? "?"} to ${statement.periodEnd ?? "?"}`
-                          : "Period unknown"}
+                      <span class="figures font-medium">
+                        {formatPeriod(statement.periodStart, statement.periodEnd)}
                       </span>
                       <StatusBadge status={statement.status} />
                     </div>
-                    <div class="text-xs text-neutral-500">
+                    <div class="mt-0.5 text-xs text-ink-soft">
                       <span class="break-all">{statement.fileName}</span>
-                      {", "}
-                      {statement.transactionCount} transactions
-                      <Show when={statement.closingBalance !== null}>
-                        {", closing "}
-                        {formatMad(statement.closingBalance ?? 0)}
-                      </Show>
+                      <span class="figures">
+                        {", "}
+                        {plural(statement.transactionCount, "transaction")}
+                        <Show when={statement.closingBalance !== null}>
+                          {", closing "}
+                          {formatMad(statement.closingBalance ?? 0)}
+                        </Show>
+                      </span>
                     </div>
                   </li>
                 )}
@@ -401,11 +426,11 @@ function StatementsCard() {
           </Show>
         )}
       </Show>
-    </Card>
+    </Section>
   );
 }
 
-function NeedsReviewCard() {
+function NeedsReviewSection() {
   const review = useQuery(() => orpc.reports.needsReview.queryOptions());
   const isEmpty = () => {
     const data = review.data;
@@ -418,108 +443,138 @@ function NeedsReviewCard() {
   };
 
   return (
-    <Card title="Needs review">
-      <Show when={review.data} fallback={<p class="text-sm">Loading...</p>}>
+    <Section title="Needs review" titleId="review-title">
+      <Show when={review.data} fallback={<SkeletonRows rows={3} />}>
         {(data) => (
           <Show
             when={!isEmpty()}
-            fallback={<p class="text-sm text-neutral-500">Nothing to review.</p>}
+            fallback={
+              <div class="flex items-center gap-3 rounded-panel bg-mint-tint p-4 text-sm">
+                <Icon icon={CircleCheck} class="text-mint" />
+                <span>Nothing to review. Every transaction has a confident category.</span>
+              </div>
+            }
           >
-            <div class="space-y-4 text-sm">
+            <div class="space-y-4">
               <Show when={data().statements.length > 0}>
-                <ReviewSection
-                  title={`Statements (${data().statements.length})`}
+                <ReviewGroup
+                  icon={FileSearch}
+                  title="Statements"
+                  count={data().statements.length}
                   href="/upload"
                   linkLabel="Open statements"
                 >
                   <For each={data().statements}>
                     {(statement) => (
-                      <li class="flex flex-wrap items-baseline justify-between gap-2">
-                        <span>
-                          <span class="break-all">{statement.fileName}</span>
+                      <li class="flex flex-wrap items-start justify-between gap-2 py-2.5">
+                        <span class="min-w-0">
+                          <span class="block break-all">{statement.fileName}</span>
                           <Show when={statement.reason}>
-                            <span class="block text-xs text-neutral-500">{statement.reason}</span>
+                            <span class="block text-xs text-ink-soft">{statement.reason}</span>
                           </Show>
                         </span>
                         <StatusBadge status={statement.status} />
                       </li>
                     )}
                   </For>
-                </ReviewSection>
+                </ReviewGroup>
               </Show>
 
               <Show when={data().cashWithdrawals.total > 0}>
-                <ReviewSection
-                  title={`Cash withdrawals not fully allocated (${data().cashWithdrawals.total})`}
+                <ReviewGroup
+                  icon={Banknote}
+                  title="Cash not fully split"
+                  count={data().cashWithdrawals.total}
                   href="/withdrawals"
                   linkLabel="Split withdrawals"
                 >
                   <For each={data().cashWithdrawals.items}>
                     {(row) => (
-                      <li class="flex items-baseline justify-between gap-2">
-                        <span class="truncate">
-                          <span class="tabular-nums">{row.bookingDate}</span> {row.descriptionRaw}
+                      <li class="flex items-baseline justify-between gap-3 py-2.5">
+                        <span class="min-w-0 truncate">
+                          <span class="figures mr-2 text-ink-soft">
+                            {formatDayMonth(row.bookingDate)}
+                          </span>
+                          <span dir="auto">{row.descriptionRaw}</span>
                         </span>
-                        <span class="shrink-0 tabular-nums">
-                          {formatMad(row.remainder)} of {formatMad(Math.abs(row.amount))} left
+                        <span class="shrink-0 text-right text-xs text-ink-soft">
+                          <Money
+                            centimes={row.remainder}
+                            class="text-sm font-medium text-saffron"
+                          />{" "}
+                          left
                         </span>
                       </li>
                     )}
                   </For>
-                </ReviewSection>
+                </ReviewGroup>
               </Show>
 
               <Show when={data().transactions.total > 0}>
-                <ReviewSection
-                  title={`Uncategorized or low confidence (${data().transactions.total})`}
+                <ReviewGroup
+                  icon={FileSearch}
+                  title="Unsure categories"
+                  count={data().transactions.total}
                   href="/transactions"
                   linkLabel="Review transactions"
                 >
                   <For each={data().transactions.items}>
                     {(row) => (
-                      <li class="flex items-baseline justify-between gap-2">
-                        <span class="truncate">
-                          <span class="tabular-nums">{row.bookingDate}</span>{" "}
-                          <a class="underline" href="/transactions">
-                            {row.descriptionRaw}
-                          </a>
-                          <span class="block text-xs text-neutral-500">
+                      <li class="flex items-baseline justify-between gap-3 py-2.5">
+                        <span class="min-w-0">
+                          <span class="block truncate">
+                            <span class="figures mr-2 text-ink-soft">
+                              {formatDayMonth(row.bookingDate)}
+                            </span>
+                            <a class="hover:underline" href="/transactions" dir="auto">
+                              {row.descriptionRaw}
+                            </a>
+                          </span>
+                          <span class="block text-xs text-ink-soft">
                             {row.reason === "uncategorized"
                               ? "No category"
                               : `${row.categoryName ?? "Category"}, confidence ${Math.round((row.confidence ?? 0) * 100)}%`}
                           </span>
                         </span>
-                        <span class="shrink-0 tabular-nums">{formatMad(row.amount)}</span>
+                        <Money centimes={row.amount} signed class="shrink-0 text-sm" />
                       </li>
                     )}
                   </For>
-                </ReviewSection>
+                </ReviewGroup>
               </Show>
             </div>
           </Show>
         )}
       </Show>
-    </Card>
+    </Section>
   );
 }
 
-function ReviewSection(props: {
+function ReviewGroup(props: {
+  icon: IconNode;
   title: string;
-  href?: string;
-  linkLabel?: string;
+  count: number;
+  href: string;
+  linkLabel: string;
   children: Element;
 }) {
   return (
-    <div class="space-y-1">
-      <div class="flex items-baseline justify-between gap-2">
-        <h3 class="font-medium">{props.title}</h3>
-        <Show when={props.href}>
-          <a class="text-xs underline" href={props.href}>
-            {props.linkLabel}
-          </a>
-        </Show>
+    <div class="panel px-4 pt-3 pb-1">
+      <div class="flex items-center justify-between gap-2 border-b border-rule pb-2">
+        <h3 class="flex items-center gap-2 text-sm font-semibold">
+          <span class="grid size-7 place-items-center rounded-full bg-saffron-tint text-saffron">
+            <Icon icon={props.icon} size={15} />
+          </span>
+          {props.title}
+          <span class="figures rounded-full bg-paper-sunken px-2 text-xs font-medium text-ink-soft">
+            {props.count}
+          </span>
+        </h3>
+        <a class="link inline-flex min-h-11 items-center text-xs" href={props.href}>
+          {props.linkLabel}
+        </a>
       </div>
-      <ul class="space-y-1">{props.children}</ul>
+      <ul class="divide-y divide-rule text-sm">{props.children}</ul>
     </div>
   );
 }

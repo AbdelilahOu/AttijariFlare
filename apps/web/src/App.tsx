@@ -2,8 +2,8 @@ import { Title } from "@solidjs/meta";
 import { QueryClientProvider } from "@tanstack/solid-query";
 import { Loading } from "solid-js";
 
-import Header from "~/components/header";
 import Loader from "~/components/loader";
+import Shell from "~/components/shell";
 import { Router } from "~/router";
 import { createQueryClient } from "~/utils/orpc";
 
@@ -17,11 +17,10 @@ export default function App() {
       <Router>
         {(props) => (
           <>
-            <Title>finance-ttijari</Title>
-            <div class="grid h-svh grid-rows-[auto_1fr]">
-              <Header />
+            <Title>AttijariFlare</Title>
+            <Shell>
               <Loading fallback={<Loader />}>{props.children}</Loading>
-            </div>
+            </Shell>
           </>
         )}
       </Router>

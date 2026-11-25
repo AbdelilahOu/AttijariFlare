@@ -13,6 +13,7 @@
   "dependencies": {
     "@finance-ttijari/api": "workspace:*",
     "@finance-ttijari/auth": "workspace:*",
+    "@fontsource-variable/readex-pro": "^5.3.0",
     "@orpc/client": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/tanstack-query": "^1.16.2",
@@ -21,6 +22,7 @@
     "@solidjs/web": "^2.0.0",
     "@tanstack/query-core": "5.107.1",
     "@tanstack/solid-query": "6.0.0-rc.6",
+    "lucide": "^1.80.0",
     "solid-js": "^2.0.0",
     "varlock": "catalog:",
     "zod": "catalog:"

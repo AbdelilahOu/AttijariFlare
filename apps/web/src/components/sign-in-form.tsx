@@ -2,6 +2,7 @@ import { useNavigate } from "@solidjs/router";
 import { createSignal, onSettled, Show } from "solid-js";
 import z from "zod";
 
+import { FieldError, Spinner } from "~/components/ui";
 import { authClient } from "~/lib/auth-client";
 
 const signInSchema = z.object({
@@ -51,42 +52,44 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
   };
 
   return (
-    <div class="mx-auto mt-10 w-full max-w-md p-6">
-      <h1 class="mb-6 text-center text-3xl font-bold">Welcome Back</h1>
-      <form method="post" onSubmit={submit} class="space-y-4">
-        <div class="space-y-2">
-          <label for="email">Email</label>
-          <input id="email" name="email" type="email" required class="w-full rounded border p-2" />
+    <div class="w-full">
+      <h1 class="text-2xl font-semibold lg:text-3xl">Welcome back</h1>
+      <p class="mt-2 text-sm text-ink-soft">Sign in to review your statements.</p>
+      <form method="post" onSubmit={submit} class="mt-8 space-y-4">
+        <div>
+          <label for="email" class="field-label">
+            Email
+          </label>
+          <input id="email" name="email" type="email" required autocomplete="email" class="field" />
         </div>
-        <div class="space-y-2">
-          <label for="password">Password</label>
+        <div>
+          <label for="password" class="field-label">
+            Password
+          </label>
           <input
             id="password"
             name="password"
             type="password"
             minlength="8"
             required
-            class="w-full rounded border p-2"
+            autocomplete="current-password"
+            class="field"
           />
         </div>
-        <Show when={error()}>{(message) => <p class="text-sm text-red-600">{message()}</p>}</Show>
-        <button
-          type="submit"
-          class="w-full rounded bg-indigo-600 p-2 text-white hover:bg-indigo-700 disabled:opacity-50"
-          disabled={!hydrated() || isSubmitting()}
-        >
-          {isSubmitting() ? "Submitting..." : "Sign In"}
+        <FieldError message={error()} />
+        <button type="submit" class="btn-primary w-full" disabled={!hydrated() || isSubmitting()}>
+          <Show when={isSubmitting()}>
+            <Spinner class="size-[18px]" />
+          </Show>
+          {isSubmitting() ? "Signing in" : "Sign in"}
         </button>
       </form>
-      <div class="mt-4 text-center">
-        <button
-          type="button"
-          onClick={onSwitchToSignUp}
-          class="text-sm text-indigo-600 hover:text-indigo-800 hover:underline"
-        >
-          Need an account? Sign Up
+      <p class="mt-6 text-sm text-ink-soft">
+        Need an account?{" "}
+        <button type="button" onClick={onSwitchToSignUp} class="link min-h-11">
+          Create one
         </button>
-      </div>
+      </p>
     </div>
   );
 }
