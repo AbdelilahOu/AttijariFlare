@@ -1,36 +1,29 @@
-import { centimesToMad } from "@finance-ttijari/api/allocations/money";
-import { useNavigate } from "@solidjs/router";
 import { useQuery } from "@tanstack/solid-query";
-import { createEffect, createSignal, For, Show } from "solid-js";
+import { Banknote, ChevronDown, CreditCard, Split } from "lucide";
+import { createSignal, For, Show } from "solid-js";
 
 import AllocationEditor from "~/components/allocation-editor";
-import { useSession } from "~/lib/auth-client";
+import Icon from "~/components/icon";
+import {
+  EmptyState,
+  ErrorNotice,
+  Money,
+  PageHeader,
+  RequireSession,
+  SkeletonRows,
+} from "~/components/ui";
+import { formatDate, plural } from "~/lib/format";
 import { orpc } from "~/utils/orpc";
 
 export default function Withdrawals() {
-  const navigate = useNavigate();
-  const session = useSession();
-
-  createEffect(
-    () => !session().isPending && !session().data,
-    (shouldRedirect) => {
-      if (shouldRedirect) {
-        navigate("/login", { replace: true });
-      }
-    },
-  );
-
   return (
-    <Show when={!session().isPending && session().data} fallback={<p>Loading...</p>}>
-      <div class="mx-auto w-full max-w-4xl space-y-4 p-4">
-        <h1 class="text-2xl font-bold">Split debits</h1>
-        <p class="text-sm text-gray-600">
-          Say how a debit was spent. Cash withdrawals are listed first; any part left unallocated
-          stays on the transaction's own category.
-        </p>
-        <DebitList />
-      </div>
-    </Show>
+    <RequireSession>
+      <PageHeader
+        title="Split debits"
+        description="Say how a debit was spent. Cash withdrawals are listed first; any part left unallocated stays on the transaction's own category."
+      />
+      <DebitList />
+    </RequireSession>
   );
 }
 
@@ -48,49 +41,110 @@ function DebitList() {
     });
 
   return (
-    <Show when={debits.data} fallback={<p>Loading...</p>}>
-      {(rows) => (
-        <Show when={rows().length > 0} fallback={<p>No debit transactions yet.</p>}>
-          <ul class="space-y-3">
-            <For each={rows()} keyed={(row) => row.id}>
-              {(row) => {
-                const isOpen = () => (row().type === "cash_withdrawal") !== toggled().has(row().id);
-                return (
-                  <li class="rounded border p-3">
-                    <div class="flex flex-wrap items-baseline justify-between gap-2">
-                      <div>
-                        <span class="font-mono text-sm">{row().bookingDate}</span>{" "}
-                        <span>{row().descriptionRaw}</span>{" "}
-                        <span class="text-xs text-gray-500">{row().type}</span>
-                      </div>
-                      <div class="flex items-center gap-3 text-sm">
-                        <span class="font-semibold">{centimesToMad(row().amount)} MAD</span>
-                        <span>
-                          {row().parts > 0
-                            ? `${row().parts} parts, ${centimesToMad(row().remainder)} unallocated`
-                            : "not split"}
-                        </span>
-                        <button
-                          type="button"
-                          class="rounded border px-2 py-1"
-                          onClick={() => toggle(row().id)}
+    <>
+      <Show when={debits.isError}>
+        <ErrorNotice title="Could not load debits" message={debits.error?.message} />
+      </Show>
+      <Show when={debits.data} fallback={<SkeletonRows rows={4} />}>
+        {(rows) => (
+          <Show
+            when={rows().length > 0}
+            fallback={
+              <EmptyState icon={Split} title="No debits to split yet">
+                Debits from your statements appear here once a statement is parsed.
+              </EmptyState>
+            }
+          >
+            <ul class="space-y-3">
+              <For each={rows()} keyed={(row) => row.id}>
+                {(row) => {
+                  const isCash = () => row().type === "cash_withdrawal";
+                  const isOpen = () => isCash() !== toggled().has(row().id);
+                  const editorId = `split-${row().id}`;
+                  const status = () =>
+                    row().parts === 0
+                      ? { text: "Not split", class: "bg-paper-sunken text-ink-soft" }
+                      : row().remainder === 0
+                        ? {
+                            text: `${plural(row().parts, "part")}, fully split`,
+                            class: "bg-mint-tint text-mint",
+                          }
+                        : {
+                            text: `${plural(row().parts, "part")}`,
+                            class: "bg-saffron-tint text-saffron",
+                          };
+                  return (
+                    <li class="panel overflow-hidden">
+                      <div class="flex flex-wrap items-start gap-x-4 gap-y-3 p-4">
+                        <span
+                          class={[
+                            "grid size-10 shrink-0 place-items-center rounded-full",
+                            isCash()
+                              ? "bg-saffron-tint text-saffron"
+                              : "bg-action-tint text-action",
+                          ]}
                         >
-                          {isOpen() ? "Hide" : "Split"}
-                        </button>
+                          <Icon icon={isCash() ? Banknote : CreditCard} size={20} />
+                        </span>
+                        <div class="min-w-0 flex-1 basis-48">
+                          <p class="font-medium break-words" dir="auto">
+                            {row().descriptionRaw}
+                          </p>
+                          <p class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-soft">
+                            <span class="figures">{formatDate(row().bookingDate)}</span>
+                            <span>{isCash() ? "Cash withdrawal" : "Debit"}</span>
+                            <span
+                              class={`rounded-full px-2 py-0.5 font-medium transition-colors duration-300 ${status().class}`}
+                            >
+                              {status().text}
+                            </span>
+                            <Show when={row().parts > 0 && row().remainder > 0}>
+                              <span>
+                                <Money centimes={row().remainder} class="text-saffron" /> left
+                              </span>
+                            </Show>
+                          </p>
+                        </div>
+                        <div class="ml-auto flex items-center gap-3">
+                          <Money centimes={row().amount} signed class="text-base font-semibold" />
+                          <button
+                            type="button"
+                            class={[
+                              "btn-quiet min-h-10 px-3",
+                              { "border-action text-action": isOpen() },
+                            ]}
+                            aria-expanded={isOpen() ? "true" : "false"}
+                            aria-controls={editorId}
+                            onClick={() => toggle(row().id)}
+                          >
+                            {isOpen() ? "Hide" : "Split"}
+                            <Icon
+                              icon={ChevronDown}
+                              size={16}
+                              class={[
+                                "transition-transform duration-200",
+                                { "rotate-180": isOpen() },
+                              ].join(" ")}
+                            />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                    <Show when={isOpen()}>
-                      <div class="mt-2">
-                        <AllocationEditor transactionId={row().id} />
-                      </div>
-                    </Show>
-                  </li>
-                );
-              }}
-            </For>
-          </ul>
-        </Show>
-      )}
-    </Show>
+                      <Show when={isOpen()}>
+                        <div
+                          id={editorId}
+                          class="arrive border-t border-rule bg-paper-sunken/40 p-3 sm:p-4"
+                        >
+                          <AllocationEditor transactionId={row().id} />
+                        </div>
+                      </Show>
+                    </li>
+                  );
+                }}
+              </For>
+            </ul>
+          </Show>
+        )}
+      </Show>
+    </>
   );
 }

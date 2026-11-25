@@ -33,6 +33,8 @@ export default defineConfig({
       ".alchemy/**",
       ".wrangler/**",
       "**/.wrangler/**",
+      // Vendored third-party skills stay byte-identical to upstream.
+      ".claude/skills/**",
     ],
     singleQuote: false,
     semi: true,

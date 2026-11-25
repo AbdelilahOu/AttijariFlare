@@ -1,5 +1,341 @@
+@import "@fontsource-variable/readex-pro/full.css";
 @import "tailwindcss";
 
-body {
-  @apply bg-neutral-950 text-neutral-100;
+/*
+  Tokens. Light and dark live in one declaration through light-dark(); the color-scheme on
+  :root follows the system unless the owner picks a theme (data-theme on <html>).
+*/
+:root {
+  color-scheme: light dark;
+
+  /* Cloudflare palette: neutral grays and brand orange. Orange fills carry white text, as
+     on Cloudflare's own buttons; --action is a deeper orange for text, borders and focus. */
+  --paper: light-dark(#f7f7f7, #141414);
+  --paper-raised: light-dark(#ffffff, #1d1d1d);
+  --paper-sunken: light-dark(#efefef, #0f0f0f);
+  --ink: light-dark(#222222, #f2f2f2);
+  --ink-soft: light-dark(#595959, #b3b3b3);
+  --ink-faint: light-dark(#6e6e6e, #8f8f8f);
+  --rule: light-dark(#e2e2e2, #2c2c2c);
+  --rule-strong: light-dark(#c8c8c8, #404040);
+
+  --action: light-dark(#b34a00, #fbad41);
+  --action-ink: light-dark(#ffffff, #141414);
+  --action-tint: light-dark(#fdeedc, #3a2410);
+
+  --flare: #f6821f;
+  --flare-soft: #fbad41;
+  --flare-tint: light-dark(#fdeedc, #3a2410);
+  --flare-ink: #ffffff;
+  --flare-strong: #e06c0c;
+
+  --sidebar: light-dark(#ffffff, #1a1a1a);
+  --sidebar-ink: light-dark(#222222, #f2f2f2);
+  --sidebar-ink-soft: light-dark(#595959, #b3b3b3);
+  --sidebar-active: light-dark(#f2f2f2, #2a2a2a);
+  --sidebar-line: light-dark(#e2e2e2, #2c2c2c);
+
+  /* Charcoal brand surface (ledger strip, hero, sign-in panel) in both themes. */
+  --rail: light-dark(#262626, #222222);
+  --rail-ink: #f5f5f5;
+  --rail-ink-soft: #bdbdbd;
+  --rail-line: rgb(255 255 255 / 0.12);
+
+  --mint: light-dark(#13803d, #4cc27a);
+  --mint-tint: light-dark(#e3f4e8, #14301e);
+  --mint-on-rail: #6fdc97;
+  --saffron: light-dark(#9a5b00, #fbad41);
+  --saffron-tint: light-dark(#fdf0d9, #3a2a0d);
+  --garnet: light-dark(#c4291d, #ff8a80);
+  --garnet-tint: light-dark(#fce4e2, #401714);
+
+  --chart-out: #f6821f;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --rail-width: 15.5rem;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+@theme {
+  --font-sans: "Readex Pro Variable", "Segoe UI", system-ui, sans-serif;
+
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.35;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.45;
+  --text-base: 0.9375rem;
+  --text-base--line-height: 1.55;
+  --text-lg: 1.1875rem;
+  --text-lg--line-height: 1.35;
+  --text-xl: 1.4375rem;
+  --text-xl--line-height: 1.25;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 1.15;
+  --text-3xl: 2.125rem;
+  --text-3xl--line-height: 1.1;
+
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-paper-sunken: var(--paper-sunken);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-action: var(--action);
+  --color-action-ink: var(--action-ink);
+  --color-action-tint: var(--action-tint);
+  --color-flare: var(--flare);
+  --color-flare-soft: var(--flare-soft);
+  --color-flare-tint: var(--flare-tint);
+  --color-flare-ink: var(--flare-ink);
+  --color-flare-strong: var(--flare-strong);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-ink: var(--sidebar-ink);
+  --color-sidebar-ink-soft: var(--sidebar-ink-soft);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-line: var(--sidebar-line);
+  --color-rail: var(--rail);
+  --color-rail-ink: var(--rail-ink);
+  --color-rail-ink-soft: var(--rail-ink-soft);
+  --color-rail-line: var(--rail-line);
+  --color-mint: var(--mint);
+  --color-mint-tint: var(--mint-tint);
+  --color-mint-on-rail: var(--mint-on-rail);
+  --color-saffron: var(--saffron);
+  --color-saffron-tint: var(--saffron-tint);
+  --color-garnet: var(--garnet);
+  --color-garnet-tint: var(--garnet-tint);
+  --color-chart-out: var(--chart-out);
+
+  --radius-control: 0.625rem;
+  --radius-panel: 0.875rem;
+
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.06), 0 8px 24px -12px rgb(0 0 0 / 0.16);
+  --shadow-overlay: 0 2px 6px rgb(0 0 0 / 0.12), 0 24px 48px -16px rgb(0 0 0 / 0.4);
+}
+
+@media (min-width: 64rem) {
+  :root {
+    font-size: 106.25%;
+  }
+}
+
+@layer base {
+  html {
+    background: var(--paper);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-paper font-sans text-base text-ink antialiased;
+    font-feature-settings: "kern";
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-variation-settings: "HEXP" 40;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background: var(--action);
+    color: var(--action-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--action);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  a {
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+  }
+
+  input,
+  select,
+  textarea {
+    caret-color: var(--action);
+    accent-color: var(--action);
+  }
+
+  * {
+    scrollbar-color: var(--rule-strong) transparent;
+    scrollbar-width: thin;
+  }
+
+  dialog::backdrop {
+    background: rgb(0 0 0 / 0.5);
+  }
+}
+
+/* Figures: tabular and lining so amounts and dates align in columns. */
+@utility figures {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum", "lnum";
+}
+
+@utility field {
+  @apply block min-h-11 w-full rounded-control border border-rule-strong bg-paper-raised px-3 text-base text-ink transition-colors duration-150 placeholder:text-ink-faint hover:border-ink-faint focus-visible:border-action disabled:opacity-60;
+}
+
+@utility field-select {
+  @apply field;
+  @apply appearance-none pr-9;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23808080' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+}
+
+@utility field-label {
+  @apply mb-1.5 block text-sm font-medium text-ink-soft;
+}
+
+@utility btn {
+  @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-control px-4 text-sm font-medium whitespace-nowrap transition-[background-color,border-color,color,transform] duration-150 select-none active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
+}
+
+@utility btn-primary {
+  @apply btn bg-flare text-flare-ink hover:bg-flare-strong;
+}
+
+@utility btn-quiet {
+  @apply btn border border-rule-strong bg-paper-raised text-ink hover:border-ink-faint hover:bg-paper-sunken;
+}
+
+@utility btn-ghost {
+  @apply btn text-ink-soft hover:bg-paper-sunken hover:text-ink;
+}
+
+@utility btn-danger {
+  @apply btn bg-garnet text-action-ink hover:brightness-110;
+}
+
+@utility btn-icon {
+  @apply btn w-11 px-0;
+}
+
+@utility panel {
+  @apply rounded-panel border border-rule bg-paper-raised;
+}
+
+@utility link {
+  @apply font-medium text-action underline decoration-action/40 hover:decoration-action;
+}
+
+@layer components {
+  /* An inserted element arrives from slightly above; used for editors and inline banners. */
+  .arrive {
+    transition:
+      opacity 220ms var(--ease-out),
+      transform 220ms var(--ease-out);
+  }
+
+  @starting-style {
+    .arrive {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+  }
+
+  /* Confirmation stamp for a saved change. */
+  .stamp {
+    animation: stamp 420ms var(--ease-out);
+  }
+
+  /* Bars grow from the baseline; width changes animate through transform. */
+  .meter {
+    transform-origin: left center;
+    transition: transform 420ms var(--ease-out);
+  }
+
+  dialog.sheet[open] {
+    animation: sheet-in 260ms var(--ease-out);
+  }
+
+  dialog.modal[open] {
+    animation: modal-in 200ms var(--ease-out);
+  }
+
+  dialog[open]::backdrop {
+    animation: fade-in 200ms ease-out;
+  }
+
+  .popover-menu:popover-open {
+    animation: modal-in 160ms var(--ease-out);
+  }
+
+  /* The one orchestrated entrance: guilloche strokes draw themselves once. */
+  .guilloche-draw path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: draw 1600ms var(--ease-out) forwards;
+  }
+}
+
+@keyframes stamp {
+  0% {
+    opacity: 0;
+    transform: scale(1.35) rotate(-6deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.96) rotate(-2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    transform: translateY(6px) scale(0.98);
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .guilloche-draw path {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
 }

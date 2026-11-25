@@ -1,144 +1,211 @@
-import { centimesToMad } from "@finance-ttijari/api/allocations/money";
-import { For, Show } from "solid-js";
+import { createSignal, For, onSettled, Show } from "solid-js";
 
-// Plain SVG / CSS charts for the dashboard. Colors are mid tones that read on light
-// and dark backgrounds; every chart has a text alternative (aria-label or table).
+import { formatMad, formatMonth } from "~/lib/format";
 
-/** Centimes as "1 234.50 MAD" (space thousands separator, as on Attijari statements). */
-export function formatMad(centimes: number): string {
-  const [whole = "0", fraction = "00"] = centimesToMad(centimes).split(".");
-  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-  return `${grouped}.${fraction} MAD`;
-}
+// Plain SVG / CSS charts for the dashboard, colored from the theme tokens. Every chart has a
+// text alternative: the monthly chart's bars are labelled buttons, and the category bars are
+// a list whose rows read as "label, amount, share".
 
-const MONTH_NAMES = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-/** "2026-03" -> "Mar 2026" (or "Mar" when `short`). */
-export function formatMonth(month: string, short = false): string {
-  const [year, mon] = month.split("-");
-  const name = MONTH_NAMES[Number(mon) - 1] ?? mon;
-  return short ? `${name}` : `${name} ${year}`;
-}
+export { formatMad, formatMonth };
 
 export type MonthPoint = { month: string; moneyIn: number; moneyOut: number; net: number };
 
-const BAR_WIDTH = 14;
-const GROUP_GAP = 14;
-const CHART_HEIGHT = 140;
-const LABEL_HEIGHT = 18;
+const BAR_WIDTH = 13;
+const BAR_GAP = 3;
+const GROUP_WIDTH = 46;
+const AXIS_WIDTH = 44;
+const CHART_HEIGHT = 168;
+const LABEL_HEIGHT = 24;
+const TOP_PAD = 8;
+
+/** Compact axis label: 12 500 MAD -> "12.5k". */
+function compact(centimes: number): string {
+  const mad = Math.abs(centimes) / 100;
+  if (mad >= 1_000_000) return `${(mad / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (mad >= 1000) return `${(mad / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+  return `${Math.round(mad)}`;
+}
 
 /**
- * Paired bars per month: money in (up) and money out (down from the same baseline would
- * hide small months, so both grow upward side by side). Selected months are highlighted.
+ * Paired bars per month: money in and money out side by side from one baseline, so small
+ * months stay visible. Each month is a button; selected months are highlighted.
  */
 export function MonthlyChart(props: {
   points: readonly MonthPoint[];
   isSelected: (month: string) => boolean;
   onSelect: (month: string) => void;
 }) {
+  let scroller: HTMLDivElement | undefined;
+  const [available, setAvailable] = createSignal(0);
   const max = () =>
     Math.max(1, ...props.points.map((p) => Math.max(p.moneyIn, Math.abs(p.moneyOut))));
-  const groupWidth = BAR_WIDTH * 2 + GROUP_GAP;
-  const width = () => Math.max(groupWidth, props.points.length * groupWidth);
-  const barHeight = (value: number) => Math.round((Math.abs(value) / max()) * (CHART_HEIGHT - 4));
-  const label = () =>
-    props.points
-      .map(
-        (p) =>
-          `${formatMonth(p.month)}: in ${formatMad(p.moneyIn)}, out ${formatMad(Math.abs(p.moneyOut))}`,
-      )
-      .join("; ");
+  // Months spread across the panel when they fit; past that the chart scrolls sideways.
+  const groupWidth = () =>
+    Math.min(
+      GROUP_WIDTH * 3,
+      Math.max(GROUP_WIDTH, (available() - AXIS_WIDTH) / Math.max(1, props.points.length)),
+    );
+  const barWidth = () => Math.min(22, Math.max(BAR_WIDTH, Math.round(groupWidth() * 0.22)));
+  const plotWidth = () => Math.max(groupWidth(), props.points.length * groupWidth());
+  const width = () => AXIS_WIDTH + plotWidth();
+  const plotHeight = CHART_HEIGHT - TOP_PAD;
+  const barHeight = (value: number) =>
+    Math.max(1, Math.round((Math.abs(value) / max()) * plotHeight));
+  const gridValues = () => [max(), max() / 2];
+
+  // Start scrolled to the latest months on narrow screens.
+  onSettled(() => {
+    if (!scroller) return;
+    const element = scroller;
+    const observer = new ResizeObserver(() => setAvailable(element.clientWidth - 8));
+    observer.observe(element);
+    setAvailable(element.clientWidth - 8);
+    element.scrollLeft = element.scrollWidth;
+    return () => observer.disconnect();
+  });
 
   return (
-    <div class="overflow-x-auto">
-      <svg
-        role="img"
-        aria-label={`Money in and out per month. ${label()}`}
-        viewBox={`0 0 ${width()} ${CHART_HEIGHT + LABEL_HEIGHT}`}
-        width={width()}
-        height={CHART_HEIGHT + LABEL_HEIGHT}
-        class="block"
+    <figure>
+      <div
+        ref={(element) => {
+          scroller = element;
+        }}
+        class="-mx-1 overflow-x-auto px-1 pb-1"
       >
-        <line
-          x1="0"
-          x2={width()}
-          y1={CHART_HEIGHT}
-          y2={CHART_HEIGHT}
-          class="stroke-neutral-500/40"
-          stroke-width="1"
-        />
-        <For each={props.points}>
-          {(point, index) => {
-            const x = () => index() * groupWidth + GROUP_GAP / 2;
-            const inHeight = () => barHeight(point.moneyIn);
-            const outHeight = () => barHeight(point.moneyOut);
-            return (
-              <g
-                class="cursor-pointer"
-                opacity={props.isSelected(point.month) ? 1 : 0.45}
-                onClick={() => props.onSelect(point.month)}
-              >
-                <title>
-                  {`${formatMonth(point.month)}\nIn ${formatMad(point.moneyIn)}\nOut ${formatMad(Math.abs(point.moneyOut))}\nNet ${formatMad(point.net)}`}
-                </title>
-                <rect
-                  x={x() - GROUP_GAP / 2}
-                  y={0}
-                  width={groupWidth}
-                  height={CHART_HEIGHT + LABEL_HEIGHT}
-                  fill="transparent"
-                />
-                <rect
-                  x={x()}
-                  y={CHART_HEIGHT - inHeight()}
-                  width={BAR_WIDTH}
-                  height={inHeight()}
-                  rx="2"
-                  class="fill-emerald-500"
-                />
-                <rect
-                  x={x() + BAR_WIDTH}
-                  y={CHART_HEIGHT - outHeight()}
-                  width={BAR_WIDTH}
-                  height={outHeight()}
-                  rx="2"
-                  class="fill-rose-500"
-                />
-                <text
-                  x={x() + BAR_WIDTH}
-                  y={CHART_HEIGHT + LABEL_HEIGHT - 4}
-                  text-anchor="middle"
-                  class="fill-current text-[10px]"
+        <svg
+          viewBox={`0 0 ${width()} ${CHART_HEIGHT + LABEL_HEIGHT}`}
+          width={width()}
+          height={CHART_HEIGHT + LABEL_HEIGHT}
+          class="block overflow-visible"
+          aria-labelledby="monthly-chart-caption"
+        >
+          <For each={gridValues()}>
+            {(value) => {
+              const y = () => CHART_HEIGHT - barHeight(value);
+              return (
+                <g>
+                  <line
+                    x1={AXIS_WIDTH}
+                    x2={width()}
+                    y1={y()}
+                    y2={y()}
+                    class="stroke-rule"
+                    stroke-dasharray="2 4"
+                  />
+                  <text
+                    x={AXIS_WIDTH - 8}
+                    y={y() + 4}
+                    text-anchor="end"
+                    class="figures fill-ink-faint text-[11px]"
+                  >
+                    {compact(value)}
+                  </text>
+                </g>
+              );
+            }}
+          </For>
+          <line
+            x1={AXIS_WIDTH}
+            x2={width()}
+            y1={CHART_HEIGHT + 0.5}
+            y2={CHART_HEIGHT + 0.5}
+            class="stroke-rule-strong"
+          />
+          <For each={props.points}>
+            {(point, index) => {
+              const x = () => AXIS_WIDTH + index() * groupWidth();
+              const barsX = () => x() + (groupWidth() - barWidth() * 2 - BAR_GAP) / 2;
+              const inHeight = () => barHeight(point.moneyIn);
+              const outHeight = () => barHeight(point.moneyOut);
+              const selected = () => props.isSelected(point.month);
+              return (
+                <g
+                  role="button"
+                  tabindex="0"
+                  aria-pressed={selected() ? "true" : "false"}
+                  aria-label={`${formatMonth(point.month)}: in ${formatMad(point.moneyIn)}, out ${formatMad(Math.abs(point.moneyOut))}, net ${formatMad(point.net)}`}
+                  class="group cursor-pointer outline-none"
+                  onClick={() => props.onSelect(point.month)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      props.onSelect(point.month);
+                    }
+                  }}
                 >
-                  {formatMonth(point.month, true)}
-                </text>
-              </g>
-            );
-          }}
-        </For>
-      </svg>
-      <div class="mt-1 flex gap-4 text-xs text-neutral-500">
-        <span class="flex items-center gap-1">
-          <span class="inline-block h-2.5 w-2.5 rounded-sm bg-emerald-500" /> Money in
-        </span>
-        <span class="flex items-center gap-1">
-          <span class="inline-block h-2.5 w-2.5 rounded-sm bg-rose-500" /> Money out
-        </span>
+                  <rect
+                    x={x() + 2}
+                    y={0}
+                    width={groupWidth() - 4}
+                    height={CHART_HEIGHT + LABEL_HEIGHT}
+                    rx="8"
+                    class={[
+                      "transition-[fill] duration-200",
+                      selected()
+                        ? "fill-action-tint"
+                        : "fill-transparent group-hover:fill-paper-sunken",
+                    ]}
+                  />
+                  <rect
+                    x={x() + 1}
+                    y={1}
+                    width={groupWidth() - 2}
+                    height={CHART_HEIGHT + LABEL_HEIGHT - 2}
+                    rx="9"
+                    fill="none"
+                    stroke-width="2"
+                    class="stroke-action opacity-0 group-focus-visible:opacity-100"
+                  />
+                  <g class="transition-opacity duration-200" opacity={selected() ? 1 : 0.42}>
+                    <rect
+                      x={barsX()}
+                      y={CHART_HEIGHT - inHeight()}
+                      width={barWidth()}
+                      height={inHeight()}
+                      rx="3"
+                      class="fill-mint"
+                    />
+                    <rect
+                      x={barsX() + barWidth() + BAR_GAP}
+                      y={CHART_HEIGHT - outHeight()}
+                      width={barWidth()}
+                      height={outHeight()}
+                      rx="3"
+                      class="fill-chart-out"
+                    />
+                  </g>
+                  <text
+                    x={x() + groupWidth() / 2}
+                    y={CHART_HEIGHT + LABEL_HEIGHT - 6}
+                    text-anchor="middle"
+                    class={[
+                      "text-[11px]",
+                      selected() ? "fill-action font-medium" : "fill-ink-faint",
+                    ]}
+                  >
+                    {formatMonth(point.month, true)}
+                  </text>
+                </g>
+              );
+            }}
+          </For>
+        </svg>
       </div>
-    </div>
+      <figcaption
+        id="monthly-chart-caption"
+        class="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-ink-soft"
+      >
+        <span class="sr-only">Money in and out per month, in MAD. Select a month to view it.</span>
+        <span class="flex items-center gap-1.5">
+          <span class="inline-block size-2.5 rounded-[3px] bg-mint" aria-hidden="true" /> Money in
+        </span>
+        <span class="flex items-center gap-1.5">
+          <span class="inline-block size-2.5 rounded-[3px] bg-chart-out" aria-hidden="true" /> Money
+          out
+        </span>
+        <span class="text-ink-faint">Select a month to view it</span>
+      </figcaption>
+    </figure>
   );
 }
 
@@ -160,34 +227,43 @@ export function CategoryBars(props: { items: readonly BarItem[]; total: number }
     props.total > 0 ? Math.round((amount / props.total) * 1000) / 10 : 0;
 
   return (
-    <ul class="space-y-2">
+    <ul class="space-y-3.5">
       <For each={props.items}>
         {(item) => (
           <li>
             <div class="flex items-baseline justify-between gap-3 text-sm">
-              <span class="truncate">
-                <Show when={item.href} fallback={item.label}>
-                  <a class="underline" href={item.href}>
-                    {item.label}
-                  </a>
-                </Show>
-                <Show when={item.note}>
-                  <span class="ml-2 text-xs text-neutral-500">{item.note}</span>
-                </Show>
+              <span class="flex min-w-0 items-baseline gap-2">
+                <span
+                  class={`inline-block size-2.5 shrink-0 translate-y-[1px] rounded-full ${item.color ? "" : (item.barClass ?? "bg-flare")}`}
+                  style={{ "background-color": item.color ?? undefined }}
+                  aria-hidden="true"
+                />
+                <span class="min-w-0">
+                  <Show when={item.href} fallback={<span dir="auto">{item.label}</span>}>
+                    <a class="link" href={item.href} dir="auto">
+                      {item.label}
+                    </a>
+                  </Show>
+                  <Show when={item.note}>
+                    <span class="ml-2 text-xs text-ink-faint">{item.note}</span>
+                  </Show>
+                </span>
               </span>
-              <span class="shrink-0 tabular-nums">
-                {formatMad(item.amount)}{" "}
-                <span class="text-xs text-neutral-500">{share(item.amount)}%</span>
+              <span class="shrink-0 text-right">
+                <span class="figures font-medium">{formatMad(item.amount)}</span>
+                <span class="figures ml-2 inline-block w-12 text-xs text-ink-faint">
+                  {share(item.amount)}%
+                </span>
               </span>
             </div>
             <div
-              class="mt-1 h-2 w-full overflow-hidden rounded bg-neutral-500/15"
+              class="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-paper-sunken"
               aria-hidden="true"
             >
               <div
-                class={`h-full rounded ${item.color ? "" : (item.barClass ?? "bg-sky-500")}`}
+                class={`meter h-full w-full rounded-full ${item.color ? "" : (item.barClass ?? "bg-flare")}`}
                 style={{
-                  width: `${(item.amount / max()) * 100}%`,
+                  transform: `scaleX(${item.amount / max()})`,
                   "background-color": item.color ?? undefined,
                 }}
               />

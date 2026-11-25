@@ -1,10 +1,20 @@
 import type { StatementSummary } from "@finance-ttijari/api/statements";
-import { useNavigate } from "@solidjs/router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
-import { createEffect, createSignal, createStore, For, Show } from "solid-js";
+import { CircleCheck, CloudUpload, ExternalLink, FileText, Trash } from "lucide";
+import { createSignal, createStore, For, Show } from "solid-js";
 
 import { ENV } from "~/env.public";
-import { useSession } from "~/lib/auth-client";
+import { ConfirmDialog } from "~/components/dialog";
+import Icon from "~/components/icon";
+import {
+  EmptyState,
+  ErrorNotice,
+  PageHeader,
+  RequireSession,
+  SkeletonRows,
+  StatusBadge,
+} from "~/components/ui";
+import { formatPeriod, plural } from "~/lib/format";
 import { orpc } from "~/utils/orpc";
 
 const SERVER_URL = ENV.VITE_SERVER_URL.replace(/\/$/, "");
@@ -60,50 +70,11 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function formatPeriod(statement: StatementSummary): string {
-  if (!statement.periodStart && !statement.periodEnd) return "-";
-  return `${statement.periodStart ?? "?"} to ${statement.periodEnd ?? "?"}`;
-}
-
-const statusLabels: Record<StatementSummary["status"], string> = {
-  uploaded: "Queued",
-  extracting: "Extracting",
-  parsed: "Parsed",
-  needs_review: "Needs review",
-  failed: "Failed",
-};
-
-const statusClasses: Record<StatementSummary["status"], string> = {
-  uploaded: "bg-gray-200 text-gray-800",
-  extracting: "bg-blue-100 text-blue-800",
-  parsed: "bg-green-100 text-green-800",
-  needs_review: "bg-amber-100 text-amber-800",
-  failed: "bg-red-100 text-red-800",
-};
-
-function StatusBadge(props: { status: StatementSummary["status"] }) {
-  return (
-    <span class={`rounded px-2 py-0.5 text-xs font-medium ${statusClasses[props.status]}`}>
-      {statusLabels[props.status]}
-    </span>
-  );
-}
-
 export default function Upload() {
-  const navigate = useNavigate();
-  const session = useSession();
-
-  createEffect(
-    () => !session().isPending && !session().data,
-    (shouldRedirect) => {
-      if (shouldRedirect) navigate("/login", { replace: true });
-    },
-  );
-
   return (
-    <Show when={!session().isPending && session().data} fallback={<p>Loading...</p>}>
+    <RequireSession>
       <UploadPage />
-    </Show>
+    </RequireSession>
   );
 }
 
@@ -126,8 +97,12 @@ function UploadPage() {
   const refreshStatements = () =>
     queryClient.invalidateQueries({ queryKey: orpc.statements.list.key() });
 
+  const [pendingDelete, setPendingDelete] = createSignal<StatementSummary | null>(null);
   const remove = useMutation(() =>
-    orpc.statements.delete.mutationOptions({ onSuccess: () => refreshStatements() }),
+    orpc.statements.delete.mutationOptions({
+      onSuccess: () => refreshStatements(),
+      onSettled: () => setPendingDelete(null),
+    }),
   );
 
   const statementById = (id: string | undefined) =>
@@ -183,150 +158,255 @@ function UploadPage() {
     if (list && list.length > 0) void startUploads(Array.from(list));
   }
 
-  function confirmDelete(statement: StatementSummary) {
-    const ok = window.confirm(
-      `Delete "${statement.fileName}" and its ${statement.transactionCount} transactions? This cannot be undone.`,
-    );
-    if (ok) remove.mutate({ id: statement.id });
+  function confirmDelete() {
+    const statement = pendingDelete();
+    if (!statement) return;
+    remove.mutate({ id: statement.id });
   }
 
+  const pdfUrl = (id: string) => `${SERVER_URL}/api/statements/${id}/original`;
+
   return (
-    <div class="container mx-auto max-w-4xl space-y-6 px-4 py-4">
-      <h1 class="text-2xl font-semibold">Statements</h1>
+    <div class="space-y-10">
+      <PageHeader
+        title="Statements"
+        description="Upload your monthly Attijari PDF statements. Transactions are extracted and categorized in the background."
+      />
 
-      <div
-        role="button"
-        tabindex="0"
-        class={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-10 text-center ${dragging() ? "border-blue-500 bg-blue-50" : "border-gray-300"}`}
-        onClick={() => fileInput?.click()}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") fileInput?.click();
-        }}
-        onDragOver={(event) => {
-          event.preventDefault();
-          setDragging(true);
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(event) => {
-          event.preventDefault();
-          setDragging(false);
-          onFiles(event.dataTransfer?.files);
-        }}
-      >
-        <p class="font-medium">Drop Attijari PDF statements here</p>
-        <p class="text-sm text-gray-500">or click to choose files (PDF, up to 10 MB each)</p>
-        <input
-          ref={(element) => {
-            fileInput = element;
+      <section aria-labelledby="upload-title" class="-mt-4 space-y-4">
+        <h2 id="upload-title" class="sr-only">
+          Upload statements
+        </h2>
+        <div
+          role="button"
+          tabindex="0"
+          aria-describedby="upload-hint"
+          class={[
+            "group relative flex cursor-pointer flex-col items-center justify-center gap-3 overflow-hidden rounded-panel border-2 border-dashed px-6 py-10 text-center transition-[background-color,border-color] duration-200 sm:py-14",
+            dragging()
+              ? "border-action bg-action-tint"
+              : "border-rule-strong bg-paper-raised hover:border-action/60",
+          ]}
+          onClick={() => fileInput?.click()}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              fileInput?.click();
+            }
           }}
-          type="file"
-          accept="application/pdf,.pdf"
-          multiple
-          class="hidden"
-          onChange={(event) => {
-            onFiles(event.currentTarget.files);
-            event.currentTarget.value = "";
+          onDragOver={(event) => {
+            event.preventDefault();
+            setDragging(true);
           }}
-        />
-      </div>
+          onDragLeave={() => setDragging(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setDragging(false);
+            onFiles(event.dataTransfer?.files);
+          }}
+        >
+          <span
+            class={[
+              "grid size-14 place-items-center rounded-full bg-flare text-flare-ink transition-transform duration-300",
+              dragging() ? "-translate-y-1 scale-110" : "group-hover:-translate-y-0.5",
+            ]}
+          >
+            <Icon icon={CloudUpload} size={26} />
+          </span>
+          <div>
+            <p class="text-lg font-semibold">
+              {dragging() ? "Drop to upload" : "Drop Attijari PDF statements here"}
+            </p>
+            <p id="upload-hint" class="mt-1 text-sm text-ink-soft">
+              or <span class="font-medium text-action underline">choose files</span>. PDF, up to 10
+              MB each.
+            </p>
+          </div>
+          <input
+            ref={(element) => {
+              fileInput = element;
+            }}
+            type="file"
+            accept="application/pdf,.pdf"
+            multiple
+            class="hidden"
+            onChange={(event) => {
+              onFiles(event.currentTarget.files);
+              event.currentTarget.value = "";
+            }}
+          />
+        </div>
 
-      <Show when={uploads.items.length > 0}>
-        <section class="space-y-2">
-          <h2 class="font-medium">Uploads</h2>
-          <ul class="space-y-2">
+        <Show when={uploads.items.length > 0}>
+          <ul class="space-y-2" aria-label="Uploads">
             <For each={uploads.items}>
               {(item) => (
-                <li class="rounded border p-3">
-                  <div class="flex items-center justify-between gap-4 text-sm">
-                    <span class="truncate font-medium">{item.name}</span>
-                    <span class="shrink-0 text-gray-500">{formatSize(item.size)}</span>
-                  </div>
-                  <div class="mt-2 h-2 w-full overflow-hidden rounded bg-gray-200">
-                    <div
-                      class={`h-full ${item.state === "error" ? "bg-red-500" : "bg-blue-500"}`}
-                      style={{ width: `${item.state === "error" ? 100 : item.progress}%` }}
-                    />
-                  </div>
-                  <div class="mt-1 flex items-center gap-2 text-xs text-gray-600">
-                    <Show when={item.state === "queued"}>Waiting</Show>
-                    <Show when={item.state === "uploading"}>Uploading {item.progress}%</Show>
-                    <Show when={item.state === "error"}>
-                      <span class="text-red-700">{item.error}</span>
-                    </Show>
-                    <Show when={statementById(item.statementId)}>
-                      {(statement) => <StatusBadge status={statement().status} />}
-                    </Show>
+                <li class="arrive panel p-3.5">
+                  <div class="flex items-center gap-3 text-sm">
+                    <span
+                      class={[
+                        "grid size-9 shrink-0 place-items-center rounded-full transition-colors duration-300",
+                        item.state === "error"
+                          ? "bg-garnet-tint text-garnet"
+                          : item.state === "done"
+                            ? "bg-mint-tint text-mint"
+                            : "bg-action-tint text-action",
+                      ]}
+                    >
+                      <Icon icon={item.state === "done" ? CircleCheck : FileText} size={18} />
+                    </span>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-baseline justify-between gap-3">
+                        <span class="truncate font-medium">{item.name}</span>
+                        <span class="figures shrink-0 text-xs text-ink-faint">
+                          {formatSize(item.size)}
+                        </span>
+                      </div>
+                      <div
+                        class="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-paper-sunken"
+                        role="progressbar"
+                        aria-label={`Upload of ${item.name}`}
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                        aria-valuenow={item.state === "error" ? 0 : item.progress}
+                      >
+                        <div
+                          class={[
+                            "meter h-full w-full rounded-full",
+                            item.state === "error"
+                              ? "bg-garnet"
+                              : item.state === "done"
+                                ? "bg-mint"
+                                : "bg-flare",
+                          ]}
+                          style={{
+                            transform: `scaleX(${item.state === "error" ? 1 : item.progress / 100})`,
+                          }}
+                        />
+                      </div>
+                      <div class="mt-1.5 flex min-h-6 flex-wrap items-center gap-2 text-xs text-ink-soft">
+                        <Show when={item.state === "queued"}>Waiting</Show>
+                        <Show when={item.state === "uploading"}>
+                          <span class="figures">Uploading {item.progress}%</span>
+                        </Show>
+                        <Show when={item.state === "done" && !statementById(item.statementId)}>
+                          Uploaded
+                        </Show>
+                        <Show when={item.state === "error"}>
+                          <span class="text-garnet">{item.error}</span>
+                        </Show>
+                        <Show when={statementById(item.statementId)}>
+                          {(statement) => <StatusBadge status={statement().status} />}
+                        </Show>
+                      </div>
+                    </div>
                   </div>
                 </li>
               )}
             </For>
           </ul>
-        </section>
-      </Show>
+        </Show>
+      </section>
 
-      <section class="space-y-2">
-        <h2 class="font-medium">All statements</h2>
+      <section aria-labelledby="all-statements-title">
+        <h2 id="all-statements-title" class="mb-3 text-lg font-semibold">
+          All statements
+        </h2>
         <Show when={statements.isError}>
-          <p class="text-sm text-red-700">Could not load statements: {statements.error?.message}</p>
+          <ErrorNotice title="Could not load statements" message={statements.error?.message} />
+        </Show>
+        <Show when={remove.isError}>
+          <div class="mb-3">
+            <ErrorNotice title="Could not delete the statement" message={remove.error?.message} />
+          </div>
         </Show>
         <Show
           when={statements.data && statements.data.length > 0}
           fallback={
-            <p class="text-sm text-gray-500">
-              {statements.isPending ? "Loading..." : "No statements yet."}
-            </p>
+            <Show when={!statements.isPending} fallback={<SkeletonRows rows={3} />}>
+              <EmptyState icon={FileText} title="No statements yet">
+                Your first upload appears here with its extraction status.
+              </EmptyState>
+            </Show>
           }
         >
-          <table class="w-full text-left text-sm">
-            <thead class="border-b text-gray-500">
-              <tr>
-                <th class="py-2 pr-2 font-medium">File</th>
-                <th class="py-2 pr-2 font-medium">Period</th>
-                <th class="py-2 pr-2 font-medium">Status</th>
-                <th class="py-2 pr-2 text-right font-medium">Transactions</th>
-                <th class="py-2 font-medium" />
-              </tr>
-            </thead>
-            <tbody>
+          <div class="overflow-hidden rounded-panel border border-rule bg-paper-raised">
+            <div
+              class="hidden grid-cols-[minmax(0,1fr)_15rem_9rem_7rem_12rem] gap-4 border-b border-rule bg-paper-sunken/60 px-4 py-2.5 text-xs font-medium text-ink-soft xl:grid"
+              aria-hidden="true"
+            >
+              <span>File</span>
+              <span>Period</span>
+              <span>Status</span>
+              <span class="text-right">Transactions</span>
+              <span />
+            </div>
+            <ul class="divide-y divide-rule">
               <For each={statements.data}>
                 {(statement) => (
-                  <tr class="border-b align-top">
-                    <td class="py-2 pr-2">
-                      <div class="max-w-xs truncate">{statement.fileName}</div>
+                  <li class="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-2 px-4 py-3.5 xl:grid-cols-[minmax(0,1fr)_15rem_9rem_7rem_12rem] xl:items-center">
+                    <div class="min-w-0">
+                      <p class="truncate font-medium">{statement.fileName}</p>
+                      <p class="figures mt-0.5 text-xs text-ink-soft xl:hidden">
+                        {formatPeriod(statement.periodStart, statement.periodEnd)}
+                        {", "}
+                        {plural(statement.transactionCount, "transaction")}
+                      </p>
                       <Show when={statement.error}>
-                        <div class="text-xs text-red-700">{statement.error}</div>
+                        <p class="mt-1 text-xs break-words text-garnet">{statement.error}</p>
                       </Show>
-                    </td>
-                    <td class="py-2 pr-2 whitespace-nowrap">{formatPeriod(statement)}</td>
-                    <td class="py-2 pr-2">
+                    </div>
+                    <div class="figures hidden text-sm xl:block">
+                      {formatPeriod(statement.periodStart, statement.periodEnd)}
+                    </div>
+                    <div class="col-start-2 row-start-1 justify-self-end xl:col-start-auto xl:row-start-auto xl:justify-self-start">
                       <StatusBadge status={statement.status} />
-                    </td>
-                    <td class="py-2 pr-2 text-right">{statement.transactionCount}</td>
-                    <td class="py-2 text-right whitespace-nowrap">
+                    </div>
+                    <div class="figures hidden text-right text-sm xl:block">
+                      {statement.transactionCount}
+                    </div>
+                    <div class="col-span-2 -mb-1 -ml-3 flex gap-1 xl:col-span-1 xl:ml-0 xl:justify-end">
                       <a
-                        class="mr-3 underline"
-                        href={`${SERVER_URL}/api/statements/${statement.id}/original`}
+                        class="btn-ghost min-h-10 px-3"
+                        href={pdfUrl(statement.id)}
                         target="_blank"
                         rel="noopener"
                       >
+                        <Icon icon={ExternalLink} size={16} />
                         View PDF
+                        <span class="sr-only">(opens in a new tab)</span>
                       </a>
                       <button
                         type="button"
-                        class="text-red-700 underline disabled:opacity-50"
+                        class="btn-ghost min-h-10 px-3 hover:bg-garnet-tint hover:text-garnet"
                         disabled={remove.isPending}
-                        onClick={() => confirmDelete(statement)}
+                        onClick={() => setPendingDelete(statement)}
                       >
+                        <Icon icon={Trash} size={16} />
                         Delete
                       </button>
-                    </td>
-                  </tr>
+                    </div>
+                  </li>
                 )}
               </For>
-            </tbody>
-          </table>
+            </ul>
+          </div>
         </Show>
       </section>
+
+      <ConfirmDialog
+        open={pendingDelete() !== null}
+        title="Delete this statement?"
+        message={
+          pendingDelete()
+            ? `"${pendingDelete()?.fileName}" and its ${plural(pendingDelete()?.transactionCount ?? 0, "transaction")} will be deleted. This cannot be undone.`
+            : ""
+        }
+        confirmLabel={remove.isPending ? "Deleting" : "Delete statement"}
+        pending={remove.isPending}
+        onConfirm={confirmDelete}
+        onClose={() => setPendingDelete(null)}
+      />
     </div>
   );
 }
