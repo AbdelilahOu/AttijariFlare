@@ -1,9 +1,15 @@
+// Pull request previews, deployed and destroyed by .github/workflows/preview.yml:
+//   alchemy deploy --config alchemy.preview.ts --stage pr-<n>
+// Web on finance-pr-<n>.ar7al.dev, API on finance-pr-<n>-api.ar7al.dev.
+// BETTER_AUTH_SECRET comes from the CI environment.
+// Same stack as alchemy.dev.ts and alchemy.prod.ts; keep them in sync.
 import * as Cloudflare from "@alchemy.run/cloudflare";
 import * as Alchemy from "alchemy";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
-import "varlock/auto-load";
 
+// Every resource gets a physical name that includes the stage, so stages never share
+// D1, R2, queues, DLQs or the Vectorize index.
 export const db = Cloudflare.D1.Database("database", {
   migrations: "../../packages/db/src/migrations",
 });
@@ -26,42 +32,53 @@ export const merchants = Cloudflare.Vectorize.Index("merchants", {
   description: "Merchant embeddings (bge-m3) for transaction categorization",
 });
 
-export const server = Cloudflare.Worker("server", {
-  main: "../../apps/server/src/index.ts",
-  compatibility: {
-    flags: ["nodejs_compat"],
-  },
-  env: {
-    DB: db,
-    STATEMENTS: statements,
-    STATEMENT_INGEST: statementIngest,
-    TXN_ENRICH: txnEnrich,
-    // Physical queue names (they include stage and a random suffix); queue() dispatches on these.
-    STATEMENT_INGEST_QUEUE_NAME: statementIngest.pipe(Effect.map((queue) => queue.queueName)),
-    TXN_ENRICH_QUEUE_NAME: txnEnrich.pipe(Effect.map((queue) => queue.queueName)),
-    VECTORIZE: merchants,
-    AI: Cloudflare.Workers.AI(),
-    CORS_ORIGIN: Config.String("CORS_ORIGIN"),
-    BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
-    BETTER_AUTH_URL: Cloudflare.Worker.URL,
-    // Sign-up guard (packages/auth): refuses sign-up once a user exists unless set to "false".
-    SINGLE_USER: Config.String("SINGLE_USER").pipe(Config.withDefault("true")),
-  },
-  dev: {
-    port: 3000,
-  },
-});
-
-export type ServerEnv = Cloudflare.InferEnv<typeof server>;
-
 export default Alchemy.Stack(
   "finance-ttijari",
   {
     providers: Cloudflare.providers(),
+    // State lives on Cloudflare, so CI and local runs share it per stage.
     state: Cloudflare.state(),
   },
   Effect.gen(function* () {
-    const serverWorker = yield* server;
+    const stage = yield* Alchemy.Stage;
+    const match = /^pr-([1-9][0-9]*)$/.exec(stage);
+    if (!match || (yield* Alchemy.ALCHEMY_DEV)) {
+      return yield* Effect.die(
+        new Error(`alchemy.preview.ts deploys stages named pr-<number> only, got "${stage}".`),
+      );
+    }
+    const prNumber = match[1];
+
+    // One subdomain level only: the free Universal SSL certificate covers *.ar7al.dev.
+    const webHost = `finance-pr-${prNumber}.ar7al.dev`;
+    const apiHost = `finance-pr-${prNumber}-api.ar7al.dev`;
+
+    const serverWorker = yield* Cloudflare.Worker("server", {
+      main: "../../apps/server/src/index.ts",
+      compatibility: {
+        flags: ["nodejs_compat"],
+      },
+      domain: { name: apiHost, zoneName: "ar7al.dev" },
+      env: {
+        DB: db,
+        STATEMENTS: statements,
+        STATEMENT_INGEST: statementIngest,
+        TXN_ENRICH: txnEnrich,
+        // Physical queue names (they include stage and a random suffix); queue() dispatches on these.
+        STATEMENT_INGEST_QUEUE_NAME: statementIngest.pipe(Effect.map((queue) => queue.queueName)),
+        TXN_ENRICH_QUEUE_NAME: txnEnrich.pipe(Effect.map((queue) => queue.queueName)),
+        VECTORIZE: merchants,
+        AI: Cloudflare.Workers.AI(),
+        CORS_ORIGIN: Config.succeed(`https://${webHost}`),
+        BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
+        BETTER_AUTH_URL: Cloudflare.Worker.URL,
+        // Sign-up guard (packages/auth): refuses sign-up once a user exists unless set to "false".
+        SINGLE_USER: Config.String("SINGLE_USER").pipe(Config.withDefault("true")),
+      },
+      dev: {
+        port: 3000,
+      },
+    });
     const ingestQueue = yield* statementIngest;
     const ingestDlq = yield* statementIngestDlq;
     const enrichQueue = yield* txnEnrich;
@@ -113,6 +130,7 @@ export default Alchemy.Stack(
       compatibility: {
         flags: ["nodejs_compat", "global_fetch_strictly_public"],
       },
+      domain: { name: webHost, zoneName: "ar7al.dev" },
       env: {
         VITE_SERVER_URL: serverWorker.url.as<string>(),
       },

@@ -8,7 +8,7 @@ import type { CloudflareEnv } from "../../cloudflare-env";
 
 /**
  * Deliveries per message: the first one plus `maxRetries: 3` of the statement-ingest
- * consumer (packages/infra/alchemy.run.ts). After the last one the message goes to the DLQ.
+ * consumer (packages/infra/alchemy.*.ts). After the last one the message goes to the DLQ.
  */
 const MAX_ATTEMPTS = 4;
 
