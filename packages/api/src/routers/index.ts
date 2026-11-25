@@ -1,6 +1,7 @@
 import type { RouterClient } from "@orpc/server";
 
 import { protectedProcedure, publicProcedure } from "../index";
+import { allocationsRouter } from "./allocations";
 import { extractionRouter } from "./extraction";
 import { statementsRouter } from "./statements";
 
@@ -15,6 +16,7 @@ export const appRouter = {
       user: context.session?.user,
     };
   }),
+  allocations: allocationsRouter,
   statements: statementsRouter,
 };
 export type AppRouter = typeof appRouter;
