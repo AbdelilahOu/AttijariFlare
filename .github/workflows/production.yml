@@ -25,6 +25,8 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
       ALCHEMY_TELEMETRY_DISABLED: "1"
+      # Allow sign-up for more than the first user on production.
+      SINGLE_USER: "false"
     steps:
       - uses: actions/checkout@v4
 
