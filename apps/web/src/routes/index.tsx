@@ -26,6 +26,7 @@ import Icon from "~/components/icon";
 import Seo from "~/components/seo";
 import { Money } from "~/components/ui";
 import { useSession } from "~/lib/auth-client";
+import { SELF_HOST_URL, SIGNUPS_ENABLED } from "~/lib/signups";
 import { SITE_NAME, SITE_URL } from "~/lib/seo";
 import { orpc } from "~/utils/orpc";
 
@@ -200,7 +201,9 @@ const FAQ: { question: string; answer: string }[] = [
   },
   {
     question: "Is it free?",
-    answer: "Yes. Create an account and upload your statements at no cost.",
+    answer: SIGNUPS_ENABLED
+      ? "Yes. Create an account and upload your statements at no cost."
+      : "Yes, and it is open source. New sign-ups on this site are paused while we complete our declaration with the CNDP, Morocco's data protection authority. You can fork the project and self-host it for free on your own Cloudflare account.",
   },
   {
     question: "Is my data safe?",
@@ -283,9 +286,27 @@ function PrimaryCta(props: { signedIn: boolean; class?: string }) {
     <Show
       when={props.signedIn}
       fallback={
-        <a href="/login" class={`btn-primary ${props.class ?? ""}`}>
-          Create a free account
-        </a>
+        <Show
+          when={SIGNUPS_ENABLED}
+          fallback={
+            <>
+              <a href="/login?mode=signin" class={`btn-primary ${props.class ?? ""}`}>
+                Sign in
+              </a>
+              <a
+                href={SELF_HOST_URL}
+                rel="noopener"
+                class="btn border border-rail-line text-rail-ink hover:bg-rail-line"
+              >
+                Self-host it
+              </a>
+            </>
+          }
+        >
+          <a href="/login" class={`btn-primary ${props.class ?? ""}`}>
+            Create a free account
+          </a>
+        </Show>
       }
     >
       <a href="/dashboard" class={`btn-primary ${props.class ?? ""}`}>
@@ -665,7 +686,7 @@ function ClosingCall(props: { signedIn: boolean }) {
         </div>
         <div class="flex flex-wrap gap-3">
           <PrimaryCta signedIn={props.signedIn} />
-          <Show when={!props.signedIn}>
+          <Show when={!props.signedIn && SIGNUPS_ENABLED}>
             <a
               href="/login?mode=signin"
               class="btn border border-rail-line text-rail-ink hover:bg-rail-line"
@@ -697,9 +718,18 @@ function SiteFooter() {
           <a class="hover:text-ink hover:underline" href="/login?mode=signin">
             Sign in
           </a>
-          <a class="hover:text-ink hover:underline" href="/login">
-            Create an account
-          </a>
+          <Show
+            when={SIGNUPS_ENABLED}
+            fallback={
+              <a class="hover:text-ink hover:underline" href={SELF_HOST_URL} rel="noopener">
+                Self-host it
+              </a>
+            }
+          >
+            <a class="hover:text-ink hover:underline" href="/login">
+              Create an account
+            </a>
+          </Show>
           <a class="hover:text-ink hover:underline" href="#faq-title">
             Questions
           </a>
