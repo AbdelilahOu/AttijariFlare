@@ -4,6 +4,7 @@ import z from "zod";
 
 import { FieldError, Spinner } from "~/components/ui";
 import { authClient } from "~/lib/auth-client";
+import { authErrorMessage } from "~/lib/auth-errors";
 
 const signUpSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -44,7 +45,7 @@ export default function SignUpForm({ onSwitchToSignIn }: { onSwitchToSignIn: () 
           navigate("/dashboard");
         },
         onError: ({ error }) => {
-          setError(error.message);
+          setError(authErrorMessage(error, "Could not create the account. Try again."));
         },
       });
     } finally {

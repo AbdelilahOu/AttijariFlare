@@ -5,6 +5,7 @@ import { createSignal, createUniqueId, Show } from "solid-js";
 import { Sheet } from "~/components/dialog";
 import { FieldError, Spinner } from "~/components/ui";
 import { authClient } from "~/lib/auth-client";
+import { authErrorMessage } from "~/lib/auth-errors";
 
 /**
  * "Delete my account": better-auth checks the password, the server deletes every PDF,
@@ -42,7 +43,7 @@ export default function DeleteAccountDialog(props: { open: boolean; onClose: () 
     const result = await authClient.deleteUser({ password });
     setPending(false);
     if (result.error) {
-      setError(result.error.message || "Could not delete the account. Try again.");
+      setError(authErrorMessage(result.error, "Could not delete the account. Try again."));
       return;
     }
     queryClient.clear();

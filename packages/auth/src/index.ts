@@ -5,6 +5,8 @@ import { seedDefaultCategories } from "@attijari-flare/db/seed";
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 
+import { AUTH_RATE_LIMIT_RULES, createRateLimiter, type RateLimitKV } from "./rate-limit";
+
 export type AuthConfig = {
   BETTER_AUTH_URL: string;
   BETTER_AUTH_SECRET: string;
@@ -21,6 +23,7 @@ export type AuthConfig = {
    * accounts keep signing in. When on, the SINGLE_USER guard still applies.
    */
   SIGNUPS_ENABLED?: string | boolean;
+  RATE_LIMITS?: RateLimitKV;
 };
 
 export function isSingleUserMode(value: AuthConfig["SINGLE_USER"]): boolean {
@@ -34,6 +37,21 @@ export function isSignupsEnabled(value: AuthConfig["SIGNUPS_ENABLED"]): boolean 
   if (typeof value === "boolean") return value;
   return ["true", "1", "yes", "on"].includes(value.trim().toLowerCase());
 }
+
+export function authRateLimitOptions(env: Pick<AuthConfig, "RATE_LIMITS" | "BETTER_AUTH_SECRET">) {
+  const storage = env.RATE_LIMITS
+    ? { customStorage: createRateLimiter(env.RATE_LIMITS, env.BETTER_AUTH_SECRET) }
+    : { storage: "memory" as const };
+  return {
+    enabled: true,
+    window: 60,
+    max: 100,
+    customRules: AUTH_RATE_LIMIT_RULES,
+    ...storage,
+  };
+}
+
+export const IP_ADDRESS_HEADERS = ["cf-connecting-ip"];
 
 export type AuthHooks = {
   /**
@@ -62,6 +80,7 @@ export function createAuth(
     emailAndPassword: { enabled: true, disableSignUp: !signupsEnabled },
     // better-auth's telemetry is off unless enabled; pinned off so an env var cannot turn it on.
     telemetry: { enabled: false },
+    rateLimit: authRateLimitOptions(env),
     user: {
       // "Delete my account" (apps/web shell). The client sends the password, which
       // better-auth verifies before calling beforeDelete; sessions are deleted with the user.
@@ -80,6 +99,7 @@ export function createAuth(
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     advanced: {
+      ipAddress: { ipAddressHeaders: IP_ADDRESS_HEADERS },
       defaultCookieAttributes: {
         // Web and API share the registrable domain (ar7al.dev, or localhost in dev), so requests
         // from the web app to the API are same-site and Lax cookies are sent. The cookie has no

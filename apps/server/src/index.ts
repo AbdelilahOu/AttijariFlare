@@ -1,4 +1,5 @@
 import { logError } from "@attijari-flare/api/log";
+import { apiSecurityHeaders } from "@attijari-flare/api/security-headers";
 import { appRouter } from "@attijari-flare/api/routers/index";
 import {
   StatementError,
@@ -7,6 +8,7 @@ import {
   getStatementPdf,
   statementErrorStatus,
 } from "@attijari-flare/api/statements";
+import { UPLOAD_RATE_LIMIT, createRateLimiter } from "@attijari-flare/auth/rate-limit";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError } from "@orpc/server";
@@ -23,6 +25,14 @@ import { queue } from "./queues";
 import { createAuth } from "./services";
 
 const app = new Hono();
+
+app.use(async (c, next) => {
+  await next();
+  const isPdf = c.res.headers.get("Content-Type")?.startsWith("application/pdf") ?? false;
+  for (const [name, value] of Object.entries(apiSecurityHeaders(isPdf ? "pdf" : "json"))) {
+    c.res.headers.set(name, value);
+  }
+});
 
 // Request lines hold the method, path (ids only) and status. Hono prints the whole URL, so
 // the query string is cut: it can carry auth tokens (better-auth callbacks) or filters.
@@ -61,6 +71,18 @@ function statementErrorResponse(c: HonoContext, error: unknown) {
 app.post("/api/statements", async (c) => {
   const deps = await statementDeps(c);
   if (!deps) return c.json({ code: "UNAUTHORIZED", message: "Sign in first." }, 401);
+
+  const limit = await createRateLimiter(ENV.RATE_LIMITS, ENV.BETTER_AUTH_SECRET).consume(
+    `upload|${deps.userId}`,
+    UPLOAD_RATE_LIMIT,
+  );
+  if (!limit.allowed) {
+    c.header("Retry-After", String(limit.retryAfter));
+    return c.json(
+      { code: "RATE_LIMITED", message: "Too many uploads. Try again in a few minutes." },
+      429,
+    );
+  }
 
   const declaredLength = Number(c.req.header("content-length") ?? 0);
   if (declaredLength > MAX_STATEMENT_BYTES + 64 * 1024) {
@@ -101,7 +123,6 @@ app.get("/api/statements/:id/original", async (c) => {
         "Content-Length": String(object.size),
         "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(fileName)}`,
         "Cache-Control": "private, no-store",
-        "X-Content-Type-Options": "nosniff",
       },
     });
   } catch (error) {

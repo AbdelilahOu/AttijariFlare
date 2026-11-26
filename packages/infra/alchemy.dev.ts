@@ -17,6 +17,8 @@ export const db = Cloudflare.D1.Database("database", {
 // Original PDFs and extraction artifacts: statements/{id}/original.pdf, extracted.md, extraction.json
 export const statements = Cloudflare.R2.Bucket("statements");
 
+export const rateLimits = Cloudflare.KV.Namespace("rate-limits");
+
 // Upload -> ingest consumer (toMarkdown + LLM extraction). Failed messages land in the DLQ.
 export const statementIngestDlq = Cloudflare.Queues.Queue("statement-ingest-dlq");
 export const statementIngest = Cloudflare.Queues.Queue("statement-ingest");
@@ -48,6 +50,7 @@ export const server = Cloudflare.Worker("server", {
   env: {
     DB: db,
     STATEMENTS: statements,
+    RATE_LIMITS: rateLimits,
     STATEMENT_INGEST: statementIngest,
     TXN_ENRICH: txnEnrich,
     // Physical queue names (they include stage and a random suffix); queue() dispatches on these.

@@ -20,8 +20,14 @@ not access other users' data to prove a finding: a test account of your own is e
 - `trustedOrigins` is the web origin only. CORS on the API allows that origin only, with
   credentials, for `GET`, `POST` and `OPTIONS`.
 - Account deletion requires the password again.
-- Known gap: better-auth rate limiting is not active on the Worker (it is keyed on
-  `NODE_ENV=production`, which is not set, and its default store is per isolate). Follow-up.
+- Rate limiting (`packages/auth/src/rate-limit.ts`): on in every stage, counted in Workers KV
+  so all isolates share the counters. Per client IP (`cf-connecting-ip`, set by Cloudflare):
+  5 sign-in attempts per minute; 3 to 5 per 10 minutes for sign-up, account deletion, password
+  and email change, and password reset. Over the limit, better-auth answers 429 and the forms
+  say "Too many attempts, try again in a minute." KV keys are HMACs of IP and path under the
+  auth secret, so no raw IP is stored; they expire with their window. IPs are never logged.
+- Uploads (`POST /api/statements`) are limited to 10 per user per 10 minutes, to protect the
+  Workers AI quota.
 
 ### Authorization
 
@@ -34,7 +40,7 @@ not access other users' data to prove a finding: a test account of your own is e
 
 - R2: the bucket is private (no `r2.dev` URL, no custom domain, no CORS rules). PDFs are only
   reachable through `GET /api/statements/:id/original`, which checks the session and the owner
-  and answers with `Cache-Control: private, no-store` and `X-Content-Type-Options: nosniff`.
+  and answers with `Cache-Control: private, no-store` and the security headers below.
 - D1, R2, Queues and Vectorize are bound to the Worker only; there are no API keys for them in
   the app.
 - Each stage (local dev, each pull request preview, prod) has its own D1, R2, queues and
@@ -45,6 +51,25 @@ not access other users' data to prove a finding: a test account of your own is e
 
 - HTTPS only, on Workers custom domains with Cloudflare-managed certificates (`*.ar7al.dev`).
   The session cookie is `Secure`.
+
+### Security headers (`packages/api/src/security-headers.ts`)
+
+- Both workers: `Strict-Transport-Security: max-age=31536000; includeSubDomains` (every
+  `ar7al.dev` host is proxied over HTTPS and the zone has "Always Use HTTPS" on; not preloaded),
+  `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`,
+  `Permissions-Policy` with camera, microphone, geolocation, payment and USB off, and
+  `Cross-Origin-Opener-Policy: same-origin`.
+- Web pages (`apps/web/src/middleware.ts`): a CSP with `default-src 'self'`, scripts and
+  `<style>` elements allowed by a per-request nonce only (no `unsafe-inline`, no `unsafe-eval`),
+  `connect-src` limited to the stage's API, `object-src 'none'`, `frame-ancestors 'none'`,
+  `base-uri 'self'` and `form-action 'self'`. Style attributes are allowed
+  (`style-src-attr 'unsafe-inline'`): components render dynamic colors and widths during SSR, and
+  style attributes cannot run script. Static files get the same base headers from
+  `apps/web/public/_headers`.
+- API: `default-src 'none'; frame-ancestors 'none'`. The inline PDF view also allows
+  `object-src 'self'`, which Chrome's PDF viewer needs. The browsable API reference at
+  `/api-reference` loads its UI from a CDN and is blocked by this policy; its JSON spec still
+  works.
 
 ### Logging
 

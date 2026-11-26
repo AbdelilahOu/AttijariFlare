@@ -20,18 +20,19 @@ Privacy contact: **[to be filled in by the operator before sign-ups reopen]**
 The only purpose is to show each user their own spending from their own Attijariwafa bank
 statements. There is no advertising, profiling, credit scoring, resale or sharing.
 
-| Data                                                                               | Why                                           | Where                             |
-| ---------------------------------------------------------------------------------- | --------------------------------------------- | --------------------------------- |
-| Name, email, password hash                                                         | Sign-in                                       | D1 `user`, `account`              |
-| Sessions with IP address and user agent                                            | Keep you signed in (better-auth records both) | D1 `session`                      |
-| The statement PDF as uploaded, with its file name                                  | Source of truth; "View PDF"                   | R2 `statements/{id}/original.pdf` |
-| Statement period, balances, account label                                          | Reports, reconciliation                       | D1 `statements`                   |
-| Transactions: dates, description as printed, amount, running balance, type         | Reports                                       | D1 `transactions`                 |
-| Merchants derived from descriptions, including the names of people in transfers    | Categorization                                | D1 `merchants`, Vectorize         |
-| Merchant name embeddings with `user_id`, `merchant_id`, `category_id`, `confirmed` | Category suggestions from similar merchants   | Vectorize `merchants`             |
-| Categories, corrections, splits and their notes                                    | Reports                                       | D1                                |
-| When the privacy notice was accepted, and which version                            | Upload consent                                | D1 `user`                         |
-| Temporary extraction files: the PDF's text and the model's answer                  | Debugging a statement that did not reconcile  | R2, see "Retention"               |
+| Data                                                                               | Why                                           | Where                              |
+| ---------------------------------------------------------------------------------- | --------------------------------------------- | ---------------------------------- |
+| Name, email, password hash                                                         | Sign-in                                       | D1 `user`, `account`               |
+| Sessions with IP address and user agent                                            | Keep you signed in (better-auth records both) | D1 `session`                       |
+| The statement PDF as uploaded, with its file name                                  | Source of truth; "View PDF"                   | R2 `statements/{id}/original.pdf`  |
+| Statement period, balances, account label                                          | Reports, reconciliation                       | D1 `statements`                    |
+| Transactions: dates, description as printed, amount, running balance, type         | Reports                                       | D1 `transactions`                  |
+| Merchants derived from descriptions, including the names of people in transfers    | Categorization                                | D1 `merchants`, Vectorize          |
+| Merchant name embeddings with `user_id`, `merchant_id`, `category_id`, `confirmed` | Category suggestions from similar merchants   | Vectorize `merchants`              |
+| Categories, corrections, splits and their notes                                    | Reports                                       | D1                                 |
+| When the privacy notice was accepted, and which version                            | Upload consent                                | D1 `user`                          |
+| Temporary extraction files: the PDF's text and the model's answer                  | Debugging a statement that did not reconcile  | R2, see "Retention"                |
+| Rate-limit counters: a keyed hash of your IP or user id and the path, and a count  | Stop password guessing and upload abuse       | Workers KV, gone within 10 minutes |
 
 The full field-by-field inventory is in `docs/privacy-audit.md`.
 
@@ -54,8 +55,8 @@ receives it from appear in transfer descriptions and become merchant names.
 
 ## Processors and data location
 
-All processing runs on Cloudflare, acting as processor: Workers, D1, R2, Queues, Vectorize and
-Workers AI.
+All processing runs on Cloudflare, acting as processor: Workers, D1, R2, Queues, Vectorize,
+Workers KV (rate-limit counters only) and Workers AI.
 
 - Prod D1 database: region WNAM (western North America), no jurisdiction, read replication
   disabled (checked with `cf d1 get` on 2026-11-26).

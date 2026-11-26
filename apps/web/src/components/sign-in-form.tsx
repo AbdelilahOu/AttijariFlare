@@ -4,6 +4,7 @@ import z from "zod";
 
 import { FieldError, Spinner } from "~/components/ui";
 import { authClient } from "~/lib/auth-client";
+import { authErrorMessage } from "~/lib/auth-errors";
 import { SELF_HOST_URL, SIGNUPS_ENABLED } from "~/lib/signups";
 
 const signInSchema = z.object({
@@ -44,7 +45,7 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
           navigate("/dashboard");
         },
         onError: ({ error }) => {
-          setError(error.message);
+          setError(authErrorMessage(error, "Could not sign in. Try again."));
         },
       });
     } finally {
