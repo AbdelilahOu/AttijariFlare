@@ -5,6 +5,7 @@ import { statements } from "@attijari-flare/db/schema/index";
 import { eq } from "drizzle-orm";
 
 import type { CloudflareEnv } from "../../cloudflare-env";
+import { handleQueueBatch } from "./handle-batch";
 
 const MAX_ATTEMPTS = 4;
 
@@ -14,35 +15,13 @@ export async function handleStatementIngest(
   _ctx: ExecutionContext,
 ): Promise<void> {
   const db = createDb(env);
-  for (const message of batch.messages) {
-    const { statementId } = message.body;
-    const startedAt = Date.now();
-    try {
-      const result = await ingestStatement({ db, env }, statementId);
-      console.log(
-        JSON.stringify({
-          event: "statement-ingest.done",
-          statementId,
-          attempt: message.attempts,
-          ms: Date.now() - startedAt,
-          ...result,
-        }),
-      );
-      message.ack();
-    } catch (error) {
-      const permanent = error instanceof PermanentIngestError;
-      const final = permanent || message.attempts >= MAX_ATTEMPTS;
+  await handleQueueBatch(batch, {
+    event: "statement-ingest",
+    maxAttempts: MAX_ATTEMPTS,
+    isPermanent: (error) => error instanceof PermanentIngestError,
+    run: (statementId) => ingestStatement({ db, env }, statementId),
+    onError: async (statementId, error, final) => {
       const reason = error instanceof Error ? error.message : String(error);
-      console.error(
-        JSON.stringify({
-          event: "statement-ingest.error",
-          statementId,
-          attempt: message.attempts,
-          permanent,
-          final,
-          error: reason,
-        }),
-      );
       await db
         .update(statements)
         .set(final ? { status: "failed", error: reason } : { error: reason })
@@ -50,11 +29,6 @@ export async function handleStatementIngest(
         .catch((updateError: unknown) =>
           console.error("statement-ingest: status update", updateError),
         );
-      if (permanent) {
-        message.ack();
-      } else {
-        message.retry();
-      }
-    }
-  }
+    },
+  });
 }
