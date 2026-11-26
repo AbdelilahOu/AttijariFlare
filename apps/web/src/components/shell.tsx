@@ -18,6 +18,7 @@ import { createSignal, createUniqueId, type Element, For, onSettled, Show } from
 import DeleteAccountDialog from "~/components/delete-account-dialog";
 import Guilloche from "~/components/guilloche";
 import Icon from "~/components/icon";
+import { SignupPauseBanner } from "~/components/signup-pause";
 import { authClient, useSession } from "~/lib/auth-client";
 import { setTheme, syncTheme, theme, type ThemeChoice } from "~/lib/theme";
 
@@ -74,6 +75,7 @@ function PublicLayout(props: { children: Element }) {
   const location = useLocation();
   return (
     <div class="flex min-h-svh flex-col">
+      <SignupPauseBanner />
       <header class="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-3 py-3 sm:gap-4 sm:px-6">
         <Wordmark class="text-ink" />
         <div class="flex items-center gap-1">
@@ -109,6 +111,7 @@ function AppLayout(props: { children: Element }) {
 
   return (
     <div class="min-h-svh lg:pl-[var(--rail-width)]">
+      <SignupPauseBanner />
       {/* Desktop rail */}
       <aside class="fixed inset-y-0 left-0 z-30 hidden w-[var(--rail-width)] flex-col overflow-hidden border-r border-sidebar-line bg-sidebar text-sidebar-ink lg:flex">
         <Guilloche

@@ -1,13 +1,16 @@
 import { useLocation } from "@solidjs/router";
-import { createSignal, Match, Switch } from "solid-js";
+import { createSignal, Match, Show, Switch } from "solid-js";
 
 import Guilloche from "~/components/guilloche";
 import Seo from "~/components/seo";
 import SignInForm from "~/components/sign-in-form";
 import SignUpForm from "~/components/sign-up-form";
+import { SignupPausedPanel } from "~/components/signup-pause";
+import { SIGNUPS_ENABLED } from "~/lib/signups";
 
 export default function Login() {
-  // "/login?mode=signin" opens the sign-in form; the default is sign-up.
+  // "/login?mode=signin" opens the sign-in form; the default is sign-up, or the
+  // paused-sign-ups explanation when SIGNUPS_ENABLED is off.
   const location = useLocation();
   const [showSignIn, setShowSignIn] = createSignal(
     new URLSearchParams(location.search).get("mode") === "signin",
@@ -16,8 +19,16 @@ export default function Login() {
   return (
     <>
       <Seo
-        title="Sign in or create an account - AttijariFlare"
-        description="Create a free AttijariFlare account to track spending from your Attijariwafa bank PDF statements in MAD, or sign in to your dashboard."
+        title={
+          SIGNUPS_ENABLED
+            ? "Sign in or create an account - AttijariFlare"
+            : "Sign in - AttijariFlare"
+        }
+        description={
+          SIGNUPS_ENABLED
+            ? "Create a free AttijariFlare account to track spending from your Attijariwafa bank PDF statements in MAD, or sign in to your dashboard."
+            : "Sign in to your AttijariFlare dashboard. New sign-ups are paused while the CNDP declaration is completed; you can self-host AttijariFlare on your own Cloudflare account."
+        }
         path="/login"
       />
       <div class="mx-auto grid w-full max-w-6xl gap-8 px-4 pt-4 pb-12 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:gap-16 lg:pt-10">
@@ -40,7 +51,12 @@ export default function Login() {
               <SignInForm onSwitchToSignUp={() => setShowSignIn(false)} />
             </Match>
             <Match when={!showSignIn()}>
-              <SignUpForm onSwitchToSignIn={() => setShowSignIn(true)} />
+              <Show
+                when={SIGNUPS_ENABLED}
+                fallback={<SignupPausedPanel onSwitchToSignIn={() => setShowSignIn(true)} />}
+              >
+                <SignUpForm onSwitchToSignIn={() => setShowSignIn(true)} />
+              </Show>
             </Match>
           </Switch>
         </div>

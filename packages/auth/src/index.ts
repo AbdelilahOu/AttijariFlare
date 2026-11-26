@@ -15,12 +15,24 @@ export type AuthConfig = {
    * Set to "false" to allow additional sign-ups.
    */
   SINGLE_USER?: string | boolean;
+  /**
+   * Master sign-up switch. Off unless explicitly set to "true": email sign-up is then
+   * refused by better-auth itself and any user creation is blocked, while existing
+   * accounts keep signing in. When on, the SINGLE_USER guard still applies.
+   */
+  SIGNUPS_ENABLED?: string | boolean;
 };
 
 export function isSingleUserMode(value: AuthConfig["SINGLE_USER"]): boolean {
   if (value === undefined) return true;
   if (typeof value === "boolean") return value;
   return !["false", "0", "no", "off"].includes(value.trim().toLowerCase());
+}
+
+export function isSignupsEnabled(value: AuthConfig["SIGNUPS_ENABLED"]): boolean {
+  if (value === undefined) return false;
+  if (typeof value === "boolean") return value;
+  return ["true", "1", "yes", "on"].includes(value.trim().toLowerCase());
 }
 
 export type AuthHooks = {
@@ -39,6 +51,7 @@ export function createAuth(
   hooks: AuthHooks = {},
 ) {
   const singleUser = isSingleUserMode(env.SINGLE_USER);
+  const signupsEnabled = isSignupsEnabled(env.SIGNUPS_ENABLED);
 
   return betterAuth({
     database: drizzleAdapter(database, {
@@ -46,7 +59,7 @@ export function createAuth(
       schema,
     }),
     trustedOrigins: [env.CORS_ORIGIN, ...desktopOrigins],
-    emailAndPassword: { enabled: true },
+    emailAndPassword: { enabled: true, disableSignUp: !signupsEnabled },
     // better-auth's telemetry is off unless enabled; pinned off so an env var cannot turn it on.
     telemetry: { enabled: false },
     user: {
@@ -80,6 +93,10 @@ export function createAuth(
       user: {
         create: {
           before: async () => {
+            // Second line of defence behind disableSignUp: no code path may create a user.
+            if (!signupsEnabled) {
+              throw new APIError("FORBIDDEN", { message: "Sign-up is disabled on this instance." });
+            }
             if (!singleUser) return;
             const existing = await database
               .select({ id: schema.user.id })

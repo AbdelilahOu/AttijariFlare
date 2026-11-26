@@ -72,7 +72,7 @@ Workers custom domains on the `ar7al.dev` zone — Cloudflare manages the DNS/ce
 `BETTER_AUTH_URL` and `VITE_SERVER_URL` are all derived from the stage's hostnames, not set by hand.
 
 - **Local dev**: `bun run dev` runs `alchemy dev`; never deploys, no custom domains, reads
-  `BETTER_AUTH_SECRET`/`CORS_ORIGIN`/`SINGLE_USER` from `apps/server/.env`. Connect Cloudflare once
+  `BETTER_AUTH_SECRET`/`CORS_ORIGIN`/`SINGLE_USER`/`SIGNUPS_ENABLED` from `apps/server/.env`. Connect Cloudflare once
   via `packages/infra/node_modules/.bin/alchemy profile edit`.
 - **Previews**: `preview.yml` deploys `pr-<n>` on open/push/reopen (not drafts), posts the URLs as
   a PR comment, and destroys the stage on close. Forked PRs are skipped (no secrets).
@@ -105,7 +105,41 @@ API token permissions (Cloudflare dashboard → My Profile → API Tokens):
 - Account: Workers Scripts, D1, R2, Queues, Vectorize (Edit); Workers AI, Account Settings (Read); Secrets Store (Edit, for Alchemy state)
 - Zone `ar7al.dev` only: Workers Routes, DNS (Edit); Zone (Read)
 
-`CORS_ORIGIN` and `SINGLE_USER` are plain stage config, not secrets.
+`CORS_ORIGIN`, `SINGLE_USER` and `SIGNUPS_ENABLED` are plain stage config, not secrets.
+
+### Sign-up switch
+
+`SIGNUPS_ENABLED` is the single switch for creating accounts. It defaults to `false` on `prod`
+and `pr-<n>` and to `true` in local dev. When it is not `true`, better-auth refuses email sign-up
+(`emailAndPassword.disableSignUp`, so `POST /api/auth/sign-up/email` fails), a database hook blocks
+any other user creation, and the web app shows a paused-sign-ups banner instead of sign-up calls
+to action. Existing accounts keep signing in. When it is `true`, `SINGLE_USER` (default `true`)
+still refuses sign-up once one user exists; set it to `false` to allow more users.
+
+The hosted instance (finance.ar7al.dev) keeps sign-ups closed until its processing of personal
+financial data is declared with the CNDP under Moroccan law 09-08.
+
+### Self-host on your own Cloudflare account
+
+Sign-ups on the hosted instance are paused, so the way to use AttijariFlare today is your own copy.
+
+1. Fork https://github.com/AbdelilahOu/AttijariFlare and clone your fork.
+2. Use a Cloudflare account on the free tier (Workers, D1, R2, Queues, Vectorize and Workers AI
+   all fit it for personal use) with a zone for your domain. Replace `ar7al.dev` and the
+   `finance*` hostnames in `packages/infra/alchemy.prod.ts` (and `alchemy.preview.ts`) with yours.
+3. Connect Alchemy: locally run `packages/infra/node_modules/.bin/alchemy profile edit`; for CI
+   create an API token with the permissions listed under [Secrets](#secrets).
+4. Add the GitHub secrets from [Secrets](#secrets) to your fork: `CLOUDFLARE_API_TOKEN`,
+   `CLOUDFLARE_ACCOUNT_ID`, `BETTER_AUTH_SECRET` (in a `production` environment) and, for
+   previews, `BETTER_AUTH_SECRET_PREVIEW`.
+5. Turn on sign-up for your instance: set `SIGNUPS_ENABLED: "true"` in the `env` block of
+   `.github/workflows/production.yml`. With the default `SINGLE_USER=true`, only the first
+   account (yours) can be created, so you can leave it on.
+6. Push to `main`; the Production workflow deploys your instance.
+
+A self-hosted instance is run independently by its operator, not by this project. If you host
+other people's data, you carry the legal obligations that come with it, including any
+declaration with the CNDP under law 09-08 in Morocco.
 
 ### Free-tier notes
 

@@ -11,6 +11,7 @@ const config = {
   BETTER_AUTH_SECRET: "test-secret-for-account-deletion-test-only-0123456789",
   CORS_ORIGIN: "http://localhost:3001",
   SINGLE_USER: "false",
+  SIGNUPS_ENABLED: "true",
 };
 const credentials = { name: "Exemple", email: "exemple@example.test", password: "exemple-pass-1" };
 

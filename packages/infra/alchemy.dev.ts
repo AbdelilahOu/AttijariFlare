@@ -60,6 +60,8 @@ export const server = Cloudflare.Worker("server", {
     BETTER_AUTH_URL: Cloudflare.Worker.URL,
     // Sign-up guard (packages/auth): refuses sign-up once a user exists unless set to "false".
     SINGLE_USER: Config.String("SINGLE_USER").pipe(Config.withDefault("true")),
+    // Master sign-up switch (packages/auth): sign-up is refused unless set to "true".
+    SIGNUPS_ENABLED: Config.String("SIGNUPS_ENABLED").pipe(Config.withDefault("true")),
   },
   dev: {
     port: 3000,
@@ -140,6 +142,8 @@ export default Alchemy.Stack(
       observability,
       env: {
         VITE_SERVER_URL: serverWorker.url.as<string>(),
+        // Shows the paused-sign-ups banner and hides sign-up calls to action when not "true".
+        VITE_SIGNUPS_ENABLED: Config.String("SIGNUPS_ENABLED").pipe(Config.withDefault("true")),
       },
       dev: {
         port: 3001,
