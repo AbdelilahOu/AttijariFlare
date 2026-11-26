@@ -1,7 +1,7 @@
 import Seo from "~/components/seo";
 import type { StatementSummary } from "@attijari-flare/api/statements";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
-import { CircleCheck, CloudUpload, ExternalLink, FileText, Trash } from "lucide";
+import { CircleCheck, CloudUpload, ExternalLink, FileText, ShieldCheck, Trash } from "lucide";
 import { createSignal, createStore, For, Show } from "solid-js";
 
 import { ENV } from "~/env.public";
@@ -87,6 +87,15 @@ function UploadPage() {
   const [uploads, setUploads] = createStore<{ items: UploadItem[] }>({ items: [] });
   const [dragging, setDragging] = createSignal(false);
   let fileInput: HTMLInputElement | undefined;
+
+  // Upload consent: the server refuses uploads until the current notice is accepted.
+  const privacy = useQuery(() => orpc.account.privacy.queryOptions());
+  const acceptPrivacy = useMutation(() =>
+    orpc.account.acceptPrivacy.mutationOptions({
+      onSuccess: (status) => queryClient.setQueryData(orpc.account.privacy.queryKey(), status),
+    }),
+  );
+  const consented = () => privacy.data?.accepted === true;
   let nextKey = 0;
 
   const statements = useQuery(() =>
@@ -181,65 +190,88 @@ function UploadPage() {
         <h2 id="upload-title" class="sr-only">
           Upload statements
         </h2>
-        <div
-          role="button"
-          tabindex="0"
-          aria-describedby="upload-hint"
-          class={[
-            "group relative flex cursor-pointer flex-col items-center justify-center gap-3 overflow-hidden rounded-panel border-2 border-dashed px-6 py-10 text-center transition-[background-color,border-color] duration-200 sm:py-14",
-            dragging()
-              ? "border-action bg-action-tint"
-              : "border-rule-strong bg-paper-raised hover:border-action/60",
-          ]}
-          onClick={() => fileInput?.click()}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              fileInput?.click();
-            }
-          }}
-          onDragOver={(event) => {
-            event.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(event) => {
-            event.preventDefault();
-            setDragging(false);
-            onFiles(event.dataTransfer?.files);
-          }}
-        >
-          <span
-            class={[
-              "grid size-14 place-items-center rounded-full bg-flare text-flare-ink transition-transform duration-300",
-              dragging() ? "-translate-y-1 scale-110" : "group-hover:-translate-y-0.5",
-            ]}
-          >
-            <Icon icon={CloudUpload} size={26} />
-          </span>
-          <div>
-            <p class="text-lg font-semibold">
-              {dragging() ? "Drop to upload" : "Drop Attijari PDF statements here"}
-            </p>
-            <p id="upload-hint" class="mt-1 text-sm text-ink-soft">
-              or <span class="font-medium text-action underline">choose files</span>. PDF, up to 10
-              MB each.
-            </p>
-          </div>
-          <input
-            ref={(element) => {
-              fileInput = element;
-            }}
-            type="file"
-            accept="application/pdf,.pdf"
-            multiple
-            class="hidden"
-            onChange={(event) => {
-              onFiles(event.currentTarget.files);
-              event.currentTarget.value = "";
-            }}
+        <Show when={privacy.isError}>
+          <ErrorNotice
+            title="Could not load your privacy settings"
+            message={privacy.error?.message}
           />
-        </div>
+        </Show>
+        <Show when={privacy.data && !consented()}>
+          <ConsentNotice
+            pending={acceptPrivacy.isPending}
+            error={acceptPrivacy.error?.message}
+            onAccept={() => acceptPrivacy.mutate({})}
+          />
+        </Show>
+        <Show when={consented()}>
+          <div
+            role="button"
+            tabindex="0"
+            aria-describedby="upload-hint"
+            class={[
+              "group relative flex cursor-pointer flex-col items-center justify-center gap-3 overflow-hidden rounded-panel border-2 border-dashed px-6 py-10 text-center transition-[background-color,border-color] duration-200 sm:py-14",
+              dragging()
+                ? "border-action bg-action-tint"
+                : "border-rule-strong bg-paper-raised hover:border-action/60",
+            ]}
+            onClick={() => fileInput?.click()}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                fileInput?.click();
+              }
+            }}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(event) => {
+              event.preventDefault();
+              setDragging(false);
+              onFiles(event.dataTransfer?.files);
+            }}
+          >
+            <span
+              class={[
+                "grid size-14 place-items-center rounded-full bg-flare text-flare-ink transition-transform duration-300",
+                dragging() ? "-translate-y-1 scale-110" : "group-hover:-translate-y-0.5",
+              ]}
+            >
+              <Icon icon={CloudUpload} size={26} />
+            </span>
+            <div>
+              <p class="text-lg font-semibold">
+                {dragging() ? "Drop to upload" : "Drop Attijari PDF statements here"}
+              </p>
+              <p id="upload-hint" class="mt-1 text-sm text-ink-soft">
+                or <span class="font-medium text-action underline">choose files</span>. PDF, up to
+                10 MB each.
+              </p>
+            </div>
+            <input
+              ref={(element) => {
+                fileInput = element;
+              }}
+              type="file"
+              accept="application/pdf,.pdf"
+              multiple
+              class="hidden"
+              onChange={(event) => {
+                onFiles(event.currentTarget.files);
+                event.currentTarget.value = "";
+              }}
+            />
+          </div>
+          <p class="flex items-center gap-2 text-xs text-ink-faint">
+            <Icon icon={ShieldCheck} size={14} />
+            Statements are stored and processed on Cloudflare as described in the{" "}
+            <a class="link" href="/privacy">
+              privacy notice
+            </a>
+            .
+          </p>
+        </Show>
 
         <Show when={uploads.items.length > 0}>
           <ul class="space-y-2" aria-label="Uploads">
@@ -411,6 +443,60 @@ function UploadPage() {
         onConfirm={confirmDelete}
         onClose={() => setPendingDelete(null)}
       />
+    </div>
+  );
+}
+
+function ConsentNotice(props: { pending: boolean; error?: string; onAccept: () => void }) {
+  const [checked, setChecked] = createSignal(false);
+  return (
+    <div class="panel space-y-4 p-5" role="region" aria-labelledby="consent-title">
+      <div class="flex items-start gap-3">
+        <span class="grid size-10 shrink-0 place-items-center rounded-full bg-action-tint text-action">
+          <Icon icon={ShieldCheck} size={20} />
+        </span>
+        <div>
+          <h3 id="consent-title" class="font-semibold">
+            Before your first upload
+          </h3>
+          <p class="mt-1 text-sm text-ink-soft">
+            A bank statement holds your balances, every transaction and the names of people you pay
+            or who pay you. The PDF is kept in private storage on Cloudflare, outside Morocco, and
+            read by Cloudflare Workers AI to extract and categorize your transactions. Only your
+            account can see the results, and you can delete any statement or your whole account at
+            any time.
+          </p>
+          <p class="mt-2 text-sm">
+            <a class="link" href="/privacy" target="_blank" rel="noopener">
+              Read the privacy notice
+              <span class="sr-only"> (opens in a new tab)</span>
+            </a>
+          </p>
+        </div>
+      </div>
+      <label class="flex min-h-11 cursor-pointer items-start gap-3 text-sm">
+        <input
+          type="checkbox"
+          class="mt-0.5 size-5 shrink-0 accent-action"
+          checked={checked()}
+          onChange={(event) => setChecked(event.currentTarget.checked)}
+        />
+        <span>
+          I have read the privacy notice and agree that my statements are stored and processed as it
+          describes.
+        </span>
+      </label>
+      <Show when={props.error}>
+        <p class="text-sm text-garnet">{props.error}</p>
+      </Show>
+      <button
+        type="button"
+        class="btn-primary"
+        disabled={!checked() || props.pending}
+        onClick={() => props.onAccept()}
+      >
+        {props.pending ? "Saving" : "Accept and continue"}
+      </button>
     </div>
   );
 }

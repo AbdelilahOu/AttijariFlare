@@ -75,14 +75,6 @@ export async function getStatementFile(db: Database, params: { userId: string; i
   return row;
 }
 
-export async function deleteStatementRow(db: Database, params: { userId: string; id: string }) {
-  const deleted = await db
-    .delete(statements)
-    .where(and(eq(statements.id, params.id), eq(statements.userId, params.userId)))
-    .returning({ id: statements.id });
-  return deleted;
-}
-
 export async function getStatementForExtraction(db: Database, params: { id: string }) {
   const [row] = await db.select().from(statements).where(eq(statements.id, params.id)).limit(1);
   return row;

@@ -5,6 +5,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 
 import type { Bindings } from "../bindings";
+import { deleteR2Prefix } from "../privacy";
 import { statementOriginalKey, statementPrefix } from "../statements";
 import { extractStatement, ExtractionError, type RunModel } from "./extract";
 import { reconcile } from "./reconcile";
@@ -28,6 +29,11 @@ export type IngestResult = {
   neuronsEstimate: number;
 };
 
+/**
+ * Temporary extraction artifacts, next to original.pdf. They are kept while a statement is
+ * `needs_review` or `failed` (they explain what the model saw and answered), deleted as soon
+ * as a run ends `parsed`, and always deleted with the statement.
+ */
 export const artifactKeys = (statementId: string) => ({
   markdown: `${statementPrefix(statementId)}extracted.md`,
   extraction: `${statementPrefix(statementId)}extraction.json`,
@@ -62,6 +68,10 @@ export async function ingestStatement(
   const { db, env } = deps;
   const statement = await getStatementForExtraction(db, { id: statementId });
   if (!statement) {
+    // The statement was deleted, possibly while an earlier attempt was running: remove
+    // anything that attempt wrote after the deletion. Messages are only sent once the row
+    // exists, so a missing row means a deleted statement and its prefix belongs to no one.
+    await deleteR2Prefix(env.STATEMENTS, statementPrefix(statementId));
     throw new PermanentIngestError("statement_not_found");
   }
 
@@ -167,6 +177,12 @@ export async function ingestStatement(
   // One round trip, applied atomically (D1 runs a batch as a single transaction).
   const queries: [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]] = [finish, ...writes];
   await db.batch(queries);
+
+  if (status === "parsed") {
+    // The transactions are in D1 and reconcile: the markdown and the model's answer are
+    // copies of statement data that nothing reads any more.
+    await env.STATEMENTS.delete([keys.markdown, keys.extraction]);
+  }
 
   await env.TXN_ENRICH.send({ statementId });
 

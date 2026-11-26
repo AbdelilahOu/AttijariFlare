@@ -91,6 +91,9 @@ function describeError(error: unknown): string {
       )
       .join("; ");
   }
+  // A JSON.parse error quotes the model's answer, which holds statement data; this
+  // message ends up in logs and in statements.error, so it is replaced by a fixed one.
+  if (error instanceof SyntaxError) return "response is not valid JSON";
   return error instanceof Error ? error.message : String(error);
 }
 

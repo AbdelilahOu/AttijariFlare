@@ -339,3 +339,14 @@
     animation: none;
   }
 }
+
+/* Running text of the privacy notice: readable lists without a typography plugin. */
+@utility prose-notice {
+  @apply max-w-[68ch] space-y-3 leading-relaxed;
+  & ul {
+    @apply list-disc space-y-2 pl-5;
+  }
+  & ol {
+    @apply list-decimal space-y-2 pl-5;
+  }
+}

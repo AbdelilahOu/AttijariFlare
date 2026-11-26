@@ -8,6 +8,7 @@ import {
 
 import type { Bindings } from "../bindings";
 import { ServiceError } from "../errors";
+import { logError } from "../log";
 import { MERCHANT_DEFAULT_CONFIDENCE } from "./utils/decide";
 import { syncMerchantVector } from "./enrich";
 
@@ -73,13 +74,9 @@ export async function correctCategory(
       await syncMerchantVector({ db, env: deps.env }, merchant);
       vectorSynced = true;
     } catch (error) {
-      console.error(
-        JSON.stringify({
-          event: "categorization.correctCategory.vector-error",
-          merchantId: row.merchantId,
-          error: error instanceof Error ? error.message : String(error),
-        }),
-      );
+      logError("categorization.correctCategory.vector-error", error, {
+        merchantId: row.merchantId,
+      });
     }
   }
 

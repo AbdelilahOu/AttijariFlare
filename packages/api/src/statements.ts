@@ -1,6 +1,5 @@
 import { isUniqueConstraintViolation } from "@attijari-flare/db/errors";
 import {
-  deleteStatementRow,
   findStatementBySha,
   getStatementFile,
   getStatementSummary,
@@ -13,14 +12,13 @@ import type { Statement } from "@attijari-flare/db/schema/index";
 
 import type { Bindings } from "./bindings";
 import { ServiceError } from "./errors";
+import { logError } from "./log";
+import { assertPrivacyAccepted, deleteStatementData, statementPrefix } from "./privacy";
+
+export { statementPrefix };
 
 /** Largest accepted statement PDF. Attijari monthly statements are well under 1 MB. */
 export const MAX_STATEMENT_BYTES = 10 * 1024 * 1024;
-
-/** Every R2 object belonging to a statement lives under this prefix. */
-export function statementPrefix(statementId: string): string {
-  return `statements/${statementId}/`;
-}
 
 export function statementOriginalKey(statementId: string): string {
   return `${statementPrefix(statementId)}original.pdf`;
@@ -28,11 +26,16 @@ export function statementOriginalKey(statementId: string): string {
 
 export type StatementDeps = {
   db: Database;
-  env: Pick<Bindings, "STATEMENTS" | "STATEMENT_INGEST">;
+  env: Pick<Bindings, "STATEMENTS" | "STATEMENT_INGEST" | "VECTORIZE">;
   userId: string;
 };
 
-type StatementErrorCode = "BAD_REQUEST" | "PAYLOAD_TOO_LARGE" | "CONFLICT" | "NOT_FOUND";
+type StatementErrorCode =
+  | "BAD_REQUEST"
+  | "FORBIDDEN"
+  | "PAYLOAD_TOO_LARGE"
+  | "CONFLICT"
+  | "NOT_FOUND";
 
 /** Error raised by the statement service; `code` maps onto an HTTP status. */
 export class StatementError extends ServiceError<StatementErrorCode> {
@@ -47,6 +50,7 @@ export class StatementError extends ServiceError<StatementErrorCode> {
 
 export const statementErrorStatus = {
   BAD_REQUEST: 400,
+  FORBIDDEN: 403,
   NOT_FOUND: 404,
   CONFLICT: 409,
   PAYLOAD_TOO_LARGE: 413,
@@ -79,9 +83,18 @@ function sanitizeFileName(name: string): string {
 /**
  * Validates and stores an uploaded statement PDF:
  * R2 `statements/{id}/original.pdf` -> D1 row (status `uploaded`) -> `statement-ingest` message.
- * Rejects non-PDFs, files over MAX_STATEMENT_BYTES and duplicates (same sha256 for the user).
+ * Rejects users who have not accepted the privacy notice, non-PDFs, files over
+ * MAX_STATEMENT_BYTES and duplicates (same sha256 for the user).
  */
 export async function createStatement(deps: StatementDeps, file: File): Promise<Statement> {
+  try {
+    await assertPrivacyAccepted(deps);
+  } catch (error) {
+    if (error instanceof ServiceError && error.code === "FORBIDDEN") {
+      throw new StatementError("FORBIDDEN", error.message);
+    }
+    throw error;
+  }
   if (file.size === 0) {
     throw new StatementError("BAD_REQUEST", "The file is empty.");
   }
@@ -142,7 +155,7 @@ export async function createStatement(deps: StatementDeps, file: File): Promise<
   try {
     await deps.env.STATEMENT_INGEST.send({ statementId: id });
   } catch (error) {
-    console.error("statement-ingest: failed to enqueue", id, error);
+    logError("statement-ingest.enqueue-error", error, { statementId: id });
     const failed = await markStatementFailed(deps.db, {
       id,
       error: "Could not queue the statement for extraction.",
@@ -176,21 +189,18 @@ export async function getStatementPdf(deps: StatementDeps, id: string) {
   return { object, fileName: row.fileName };
 }
 
-async function deletePrefix(bucket: R2Bucket, prefix: string): Promise<void> {
-  let cursor: string | undefined;
-  do {
-    const page = await bucket.list({ prefix, cursor });
-    if (page.objects.length > 0) {
-      await bucket.delete(page.objects.map((object) => object.key));
-    }
-    cursor = page.truncated ? page.cursor : undefined;
-  } while (cursor);
-}
-
-/** Deletes the statement row (D1 cascades its transactions) and every R2 object under its prefix. */
+/**
+ * Deletes the statement with every R2 object under its prefix, its transactions and
+ * allocations, and the merchants and vectors nothing else references (see
+ * `deleteStatementData`). A retry after a partial failure finishes the deletion.
+ */
 export async function deleteStatement(deps: StatementDeps, id: string): Promise<void> {
-  const deleted = await deleteStatementRow(deps.db, { userId: deps.userId, id });
-  if (deleted.length === 0) throw new StatementError("NOT_FOUND", "Statement not found.");
-
-  await deletePrefix(deps.env.STATEMENTS, statementPrefix(id));
+  try {
+    await deleteStatementData(deps, id);
+  } catch (error) {
+    if (error instanceof ServiceError && error.code === "NOT_FOUND") {
+      throw new StatementError("NOT_FOUND", error.message);
+    }
+    throw error;
+  }
 }

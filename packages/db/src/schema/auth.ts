@@ -7,6 +7,10 @@ export const user = sqliteTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: integer("email_verified", { mode: "boolean" }).default(false).notNull(),
   image: text("image"),
+  // Upload consent: when the user accepted the privacy notice, and which version of it.
+  // Uploads are refused until it is set (packages/api/src/statements.ts).
+  privacyAcceptedAt: integer("privacy_accepted_at", { mode: "timestamp_ms" }),
+  privacyPolicyVersion: text("privacy_policy_version"),
   createdAt: integer("created_at", { mode: "timestamp_ms" })
     .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
     .notNull(),

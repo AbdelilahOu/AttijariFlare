@@ -1,5 +1,6 @@
 import type { TxnEnrichMessage } from "@attijari-flare/api/bindings";
 import { enrichStatement, PermanentEnrichError } from "@attijari-flare/api/categorization/enrich";
+import { logError } from "@attijari-flare/api/log";
 import { createDb } from "@attijari-flare/db";
 
 import type { CloudflareEnv } from "../../cloudflare-env";
@@ -32,16 +33,12 @@ export async function txnEnrichQueue(
       message.ack();
     } catch (error) {
       const permanent = error instanceof PermanentEnrichError;
-      console.error(
-        JSON.stringify({
-          event: "txn-enrich.error",
-          statementId,
-          attempt: message.attempts,
-          permanent,
-          final: permanent || message.attempts >= MAX_ATTEMPTS,
-          error: error instanceof Error ? error.message : String(error),
-        }),
-      );
+      logError("txn-enrich.error", error, {
+        statementId,
+        attempt: message.attempts,
+        permanent,
+        final: permanent || message.attempts >= MAX_ATTEMPTS,
+      });
 
       if (permanent) {
         message.ack();
