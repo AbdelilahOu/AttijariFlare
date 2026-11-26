@@ -30,14 +30,14 @@ on deploy.
 
 Provisioned entirely by `packages/infra/alchemy.*.ts` — don't create resources via wrangler or the dashboard.
 
-| Binding            | Resource                                   | Used for                       |
-| ------------------ | ------------------------------------------- | ------------------------------- |
-| `DB`               | D1 database                                 | All application data            |
-| `STATEMENTS`       | R2 bucket `statements`                      | Original PDFs, extraction output |
-| `STATEMENT_INGEST` | Queue (+ DLQ)                                | Upload → AI extraction          |
-| `TXN_ENRICH`       | Queue (+ DLQ)                                 | Extraction → categorization     |
-| `VECTORIZE`        | Index `merchants` (1024 dims, cosine)        | Merchant embeddings (`bge-m3`)  |
-| `AI`               | Workers AI                                   | toMarkdown, extraction, embeddings |
+| Binding            | Resource                              | Used for                           |
+| ------------------ | ------------------------------------- | ---------------------------------- |
+| `DB`               | D1 database                           | All application data               |
+| `STATEMENTS`       | R2 bucket `statements`                | Original PDFs, extraction output   |
+| `STATEMENT_INGEST` | Queue (+ DLQ)                         | Upload → AI extraction             |
+| `TXN_ENRICH`       | Queue (+ DLQ)                         | Extraction → categorization        |
+| `VECTORIZE`        | Index `merchants` (1024 dims, cosine) | Merchant embeddings (`bge-m3`)     |
+| `AI`               | Workers AI                            | toMarkdown, extraction, embeddings |
 
 The server worker consumes both queues (batch 1, concurrency 1, 3 retries, then DLQ), dispatching
 on `*_QUEUE_NAME` since Alchemy gives each queue a stage-suffixed physical name. DLQs have no
@@ -61,11 +61,11 @@ One Alchemy entry file per stage in `packages/infra` (deliberately duplicated �
 when adding a resource). The stage name is baked into every physical resource name, so each stage
 gets its own D1, R2, queues, and Vectorize index.
 
-| Stage        | Entry file           | Web                                | API                                    | Runs from                          |
-| ------------ | --------------------- | ----------------------------------- | ---------------------------------------- | ------------------------------------ |
-| `dev_<user>` | `alchemy.dev.ts`      | `localhost:3001`                     | `localhost:3000`                          | `bun run dev`, local only           |
-| `pr-<n>`     | `alchemy.preview.ts`  | `finance-pr-<n>.ar7al.dev`           | `finance-pr-<n>-api.ar7al.dev`            | `.github/workflows/preview.yml`     |
-| `prod`       | `alchemy.prod.ts`     | `finance.ar7al.dev`                  | `finance-api.ar7al.dev`                   | `.github/workflows/production.yml`  |
+| Stage        | Entry file           | Web                        | API                            | Runs from                          |
+| ------------ | -------------------- | -------------------------- | ------------------------------ | ---------------------------------- |
+| `dev_<user>` | `alchemy.dev.ts`     | `localhost:3001`           | `localhost:3000`               | `bun run dev`, local only          |
+| `pr-<n>`     | `alchemy.preview.ts` | `finance-pr-<n>.ar7al.dev` | `finance-pr-<n>-api.ar7al.dev` | `.github/workflows/preview.yml`    |
+| `prod`       | `alchemy.prod.ts`    | `finance.ar7al.dev`        | `finance-api.ar7al.dev`        | `.github/workflows/production.yml` |
 
 Hostnames are one subdomain level deep (free Universal SSL covers `*.ar7al.dev` only) and are
 Workers custom domains on the `ar7al.dev` zone — Cloudflare manages the DNS/certs. `CORS_ORIGIN`,
@@ -86,12 +86,12 @@ Workers custom domains on the `ar7al.dev` zone — Cloudflare manages the DNS/ce
 
 Set via the CLI, piped so nothing is printed:
 
-| Secret                       | Scope                    | Value                               |
-| ----------------------------- | ------------------------ | ------------------------------------ |
-| `CLOUDFLARE_API_TOKEN`        | Repository                | Cloudflare API token (below)         |
-| `CLOUDFLARE_ACCOUNT_ID`       | Repository                | Cloudflare account id                |
-| `BETTER_AUTH_SECRET_PREVIEW`  | Repository                | Shared by all previews               |
-| `BETTER_AUTH_SECRET`          | `production` environment  | Production only                      |
+| Secret                       | Scope                    | Value                        |
+| ---------------------------- | ------------------------ | ---------------------------- |
+| `CLOUDFLARE_API_TOKEN`       | Repository               | Cloudflare API token (below) |
+| `CLOUDFLARE_ACCOUNT_ID`      | Repository               | Cloudflare account id        |
+| `BETTER_AUTH_SECRET_PREVIEW` | Repository               | Shared by all previews       |
+| `BETTER_AUTH_SECRET`         | `production` environment | Production only              |
 
 ```bash
 openssl rand -base64 48 | tr -d '\n' | gh secret set BETTER_AUTH_SECRET_PREVIEW
