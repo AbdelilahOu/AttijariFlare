@@ -4,6 +4,7 @@ import z from "zod";
 
 import { FieldError, Spinner } from "~/components/ui";
 import { authClient } from "~/lib/auth-client";
+import { SELF_HOST_URL, SIGNUPS_ENABLED } from "~/lib/signups";
 
 const signInSchema = z.object({
   email: z.email("Invalid email address"),
@@ -86,9 +87,22 @@ export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () 
       </form>
       <p class="mt-6 text-sm text-ink-soft">
         Need an account?{" "}
-        <button type="button" onClick={onSwitchToSignUp} class="link min-h-11">
-          Create one
-        </button>
+        <Show
+          when={SIGNUPS_ENABLED}
+          fallback={
+            <>
+              Sign-ups are paused here, but you can{" "}
+              <a href={SELF_HOST_URL} class="link min-h-11" rel="noopener">
+                self-host it
+              </a>
+              .
+            </>
+          }
+        >
+          <button type="button" onClick={onSwitchToSignUp} class="link min-h-11">
+            Create one
+          </button>
+        </Show>
       </p>
     </div>
   );

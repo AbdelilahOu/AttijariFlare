@@ -25,8 +25,8 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
       ALCHEMY_TELEMETRY_DISABLED: "1"
-      # Allow sign-up for more than the first user on production.
-      SINGLE_USER: "false"
+      # Sign-up stays closed on production until the CNDP declaration (issue #24).
+      # SIGNUPS_ENABLED in packages/infra/alchemy.prod.ts defaults to "false"; do not set it here.
     steps:
       - uses: actions/checkout@v4
 
