@@ -12,14 +12,13 @@ import {
 import { ORPCError } from "@orpc/server";
 
 import { protectedProcedure } from "../index";
-import { createCategorySchema, deleteCategorySchema, updateCategorySchema } from "../schemas/categories";
+import {
+  createCategorySchema,
+  deleteCategorySchema,
+  updateCategorySchema,
+} from "../schemas/categories";
 
-async function assertValidParent(
-  db: Database,
-  userId: string,
-  parentId: string,
-  selfId?: string,
-) {
+async function assertValidParent(db: Database, userId: string, parentId: string, selfId?: string) {
   if (parentId === selfId) {
     throw new ORPCError("BAD_REQUEST", { message: "A category cannot be its own parent" });
   }

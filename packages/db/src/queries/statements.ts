@@ -43,10 +43,7 @@ export async function getStatementSummary(db: Database, params: { userId: string
   return row;
 }
 
-export async function findStatementBySha(
-  db: Database,
-  params: { userId: string; sha256: string },
-) {
+export async function findStatementBySha(db: Database, params: { userId: string; sha256: string }) {
   const [row] = await db
     .select({ id: statements.id })
     .from(statements)

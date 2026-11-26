@@ -21,7 +21,10 @@ export type ReextractDeps = {
  * has been stuck for STALE_EXTRACTION_MS.
  */
 export async function reextractStatement(deps: ReextractDeps, statementId: string) {
-  const statement = await getStatementForReextract(deps.db, { userId: deps.userId, id: statementId });
+  const statement = await getStatementForReextract(deps.db, {
+    userId: deps.userId,
+    id: statementId,
+  });
   if (!statement) throw new ReextractError("NOT_FOUND", "Statement not found");
   // A run killed mid-way leaves `extracting` behind; allow a re-run once it is stale.
   if (statement.status === "extracting" && !isExtractionStale(statement.updatedAt)) {

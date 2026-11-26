@@ -36,7 +36,11 @@ type StatementErrorCode = "BAD_REQUEST" | "PAYLOAD_TOO_LARGE" | "CONFLICT" | "NO
 
 /** Error raised by the statement service; `code` maps onto an HTTP status. */
 export class StatementError extends ServiceError<StatementErrorCode> {
-  constructor(code: StatementErrorCode, message: string, readonly existingId?: string) {
+  constructor(
+    code: StatementErrorCode,
+    message: string,
+    readonly existingId?: string,
+  ) {
     super(code, message, existingId ? { existingId } : undefined);
   }
 }

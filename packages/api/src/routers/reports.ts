@@ -31,40 +31,44 @@ function sqlRange(range: { from?: string; to?: string }) {
 
 export const reportsRouter = {
   /** Money in, money out, net and statement closing balance per booking month. */
-  monthly: protectedProcedure.input(optionalMonthRangeSchema).handler(async ({ context, input }) => {
-    const { rows, balances } = await getMonthlyTotalsRaw(context.db, {
-      userId: context.session.user.id,
-      range: sqlRange(input),
-    });
-    const totals = buildMonthlyTotals(rows, balances);
-    return totals.filter(
-      (row) => (!input.from || row.month >= input.from) && (!input.to || row.month <= input.to),
-    );
-  }),
+  monthly: protectedProcedure
+    .input(optionalMonthRangeSchema)
+    .handler(async ({ context, input }) => {
+      const { rows, balances } = await getMonthlyTotalsRaw(context.db, {
+        userId: context.session.user.id,
+        range: sqlRange(input),
+      });
+      const totals = buildMonthlyTotals(rows, balances);
+      return totals.filter(
+        (row) => (!input.from || row.month >= input.from) && (!input.to || row.month <= input.to),
+      );
+    }),
 
   /**
    * Debit spend per category for the months `from` to `to` inclusive, with allocations
    * applied. Unallocated cash withdrawals and uncategorized spend are reported apart.
    */
-  spendByCategory: protectedProcedure.input(monthRangeSchema).handler(async ({ context, input }) => {
-    const { unsplit, splitRows, categoryRows } = await getSpendByCategoryRaw(context.db, {
-      userId: context.session.user.id,
-      range: sqlRange(input),
-    });
-    return {
-      from: input.from,
-      to: input.to,
-      ...buildSpendByCategory(
-        unsplit.map((row) => ({
-          categoryId: row.categoryId,
-          isCash: Boolean(row.isCash),
-          amount: Number(row.amount),
-        })),
-        groupSplitRows(splitRows.map((row) => ({ ...row, isCash: Boolean(row.isCash) }))),
-        categoryRows,
-      ),
-    };
-  }),
+  spendByCategory: protectedProcedure
+    .input(monthRangeSchema)
+    .handler(async ({ context, input }) => {
+      const { unsplit, splitRows, categoryRows } = await getSpendByCategoryRaw(context.db, {
+        userId: context.session.user.id,
+        range: sqlRange(input),
+      });
+      return {
+        from: input.from,
+        to: input.to,
+        ...buildSpendByCategory(
+          unsplit.map((row) => ({
+            categoryId: row.categoryId,
+            isCash: Boolean(row.isCash),
+            amount: Number(row.amount),
+          })),
+          groupSplitRows(splitRows.map((row) => ({ ...row, isCash: Boolean(row.isCash) }))),
+          categoryRows,
+        ),
+      };
+    }),
 
   /** Every statement with its period, status, balances and transaction count. */
   statements: protectedProcedure.handler(({ context }) =>

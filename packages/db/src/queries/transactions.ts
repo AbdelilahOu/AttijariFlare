@@ -81,7 +81,11 @@ export async function listTransactions(db: Database, params: ListTransactionsPar
       .leftJoin(categories, eq(categories.id, transactions.categoryId))
       .leftJoin(merchants, eq(merchants.id, transactions.merchantId))
       .where(where)
-      .orderBy(desc(transactions.bookingDate), asc(transactions.statementId), asc(transactions.rowIndex))
+      .orderBy(
+        desc(transactions.bookingDate),
+        asc(transactions.statementId),
+        asc(transactions.rowIndex),
+      )
       .limit(params.pageSize)
       .offset((params.page - 1) * params.pageSize),
     db
@@ -117,7 +121,10 @@ export async function getTransactionWithMerchant(
   return row;
 }
 
-export async function getOwnedCategory(db: Database, params: { userId: string; categoryId: string }) {
+export async function getOwnedCategory(
+  db: Database,
+  params: { userId: string; categoryId: string },
+) {
   const [row] = await db
     .select({ id: categories.id })
     .from(categories)
@@ -191,14 +198,20 @@ export async function applyCategoryCorrection(db: Database, params: CorrectionBa
           })
           .where(otherRows)
           .returning({ id: transactions.id })
-      : db.select({ id: transactions.id }).from(transactions).where(sql`0`),
+      : db
+          .select({ id: transactions.id })
+          .from(transactions)
+          .where(sql`0`),
   ]);
 
   const [pending] = await db
     .select({ n: count() })
     .from(transactions)
     .where(
-      and(otherRows, or(isNull(transactions.categoryId), ne(transactions.categoryId, params.categoryId))),
+      and(
+        otherRows,
+        or(isNull(transactions.categoryId), ne(transactions.categoryId, params.categoryId)),
+      ),
     );
 
   return { merchant, applied: applied.length, sameMerchantPending: pending?.n ?? 0 };

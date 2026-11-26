@@ -89,7 +89,10 @@ export async function deleteAllocation(db: Database, params: { userId: string; i
   const [deleted] = await db
     .delete(transactionAllocations)
     .where(
-      and(eq(transactionAllocations.id, params.id), eq(transactionAllocations.userId, params.userId)),
+      and(
+        eq(transactionAllocations.id, params.id),
+        eq(transactionAllocations.userId, params.userId),
+      ),
     )
     .returning({ transactionId: transactionAllocations.transactionId });
   return deleted;

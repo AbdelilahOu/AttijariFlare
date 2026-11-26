@@ -45,7 +45,10 @@ export async function getMonthlyTotalsRaw(
       })
       .from(statements)
       .where(
-        and(eq(statements.userId, params.userId), inArray(statements.status, ["parsed", "needs_review"])),
+        and(
+          eq(statements.userId, params.userId),
+          inArray(statements.status, ["parsed", "needs_review"]),
+        ),
       ),
   ]);
   return { rows, balances };
@@ -89,7 +92,12 @@ export async function getSpendByCategoryRaw(
         asc(transactionAllocations.id),
       ),
     db
-      .select({ id: categories.id, name: categories.name, color: categories.color, kind: categories.kind })
+      .select({
+        id: categories.id,
+        name: categories.name,
+        color: categories.color,
+        kind: categories.kind,
+      })
       .from(categories)
       .where(eq(categories.userId, params.userId)),
   ]);
@@ -113,7 +121,9 @@ export async function listReportStatements(db: Database, params: { userId: strin
     .from(statements)
     .where(eq(statements.userId, params.userId))
     .orderBy(
-      desc(sql`coalesce(${statements.periodStart}, date(${statements.createdAt} / 1000, 'unixepoch'))`),
+      desc(
+        sql`coalesce(${statements.periodStart}, date(${statements.createdAt} / 1000, 'unixepoch'))`,
+      ),
     );
 }
 
@@ -136,7 +146,12 @@ export async function getNeedsReviewRaw(
         error: statements.error,
       })
       .from(statements)
-      .where(and(eq(statements.userId, params.userId), inArray(statements.status, ["failed", "needs_review"])))
+      .where(
+        and(
+          eq(statements.userId, params.userId),
+          inArray(statements.status, ["failed", "needs_review"]),
+        ),
+      )
       .orderBy(desc(statements.createdAt)),
     db
       .select({
@@ -162,7 +177,10 @@ export async function getNeedsReviewRaw(
           or(
             isNull(transactions.categoryId),
             and(
-              or(isNull(transactions.categorySource), sql`${transactions.categorySource} <> 'user'`),
+              or(
+                isNull(transactions.categorySource),
+                sql`${transactions.categorySource} <> 'user'`,
+              ),
               lt(transactions.confidence, params.lowConfidenceThreshold),
             ),
           ),
