@@ -1,6 +1,10 @@
-# finance-ttijari
+# AttijariFlare
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Solid, Hono, ORPC, and more.
+Personal finance tracker for Attijariwafa bank statements: upload a PDF statement, it gets
+extracted and categorized automatically (Workers AI + a merchant-embedding kNN step), and the
+dashboard reports on spend, allocations and what still needs review.
+
+Built on [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack) (Solid, Hono, ORPC) and deployed entirely on Cloudflare.
 
 ## Features
 
@@ -162,14 +166,21 @@ The free plan allows 10 D1 databases per account. Production plus every open pul
 ## Project Structure
 
 ```
-finance-ttijari/
+attijari-flare/
 ├── apps/
-│   ├── web/         # Frontend application (Solid)
-│   └── server/      # Backend API (Hono, ORPC)
+│   ├── web/              # Frontend application (Solid)
+│   └── server/           # Backend API (Hono, ORPC, queue consumers)
 ├── packages/
-│   ├── api/         # API layer / business logic
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
+│   ├── api/
+│   │   ├── schemas/      # oRPC input validation (zod), one file per router
+│   │   ├── routers/      # oRPC routers: validate -> call -> shape, no business logic
+│   │   ├── extraction/   # PDF -> markdown -> LLM extraction -> transactions
+│   │   ├── categorization/ # Merchant matching, kNN + LLM categorization
+│   │   ├── allocations/  # Splitting a transaction across categories
+│   │   └── reports/      # Pure aggregation for the dashboard
+│   ├── auth/             # Authentication configuration & logic
+│   └── db/
+│       └── queries/      # All DB reads/writes, one file per entity
 ```
 
 ## Available Scripts
@@ -181,7 +192,7 @@ finance-ttijari/
 - `bun run check-types`: Check TypeScript types across all apps
 - `bun run db:generate`: Generate database client/types
 - `bun run check`: Run Vite+ format/lint checks and workspace TypeScript checks
-- `bun run lint`: Run Vite+ lint checks
+- `bun run lint`: Run Vite+ lint checks across the whole workspace (each app also has its own `lint` script, scoped to that app)
 - `bun run format`: Run Vite+ formatting
 - `bun run staged`: Run Vite+ checks against staged files
 - `bun run hooks:setup`: Install Vite+ native Git hooks with `vp config`

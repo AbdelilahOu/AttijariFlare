@@ -1,5 +1,5 @@
 {
-  "name": "@finance-ttijari/infra",
+  "name": "@attijari-flare/infra",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,9 +14,9 @@
   },
   "devDependencies": {
     "@alchemy.run/cloudflare": "2.0.0-beta.86",
+    "@attijari-flare/config": "workspace:*",
     "@effect/platform-bun": "4.1.4",
     "@effect/platform-node": "4.1.4",
-    "@finance-ttijari/config": "workspace:*",
     "alchemy": "2.0.0-beta.86",
     "effect": "4.1.4",
     "typescript": "catalog:",

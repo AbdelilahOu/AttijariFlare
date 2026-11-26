@@ -1,4 +1,4 @@
-import type { Database } from "@finance-ttijari/db";
+import type { Database } from "@attijari-flare/db";
 import {
   deleteAllocation,
   getTransactionForAllocation,
@@ -6,7 +6,7 @@ import {
   listDebitTransactions,
   listOwnedCategoryIds,
   replaceAllocations,
-} from "@finance-ttijari/db/queries";
+} from "@attijari-flare/db/queries";
 import { ORPCError } from "@orpc/server";
 
 import { describeAllocationIssue, validateAllocations } from "../allocations/math";

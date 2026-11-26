@@ -1,5 +1,5 @@
-import { splitEqually } from "@finance-ttijari/api/allocations/math";
-import { centimesToMad, parseMadToCentimes } from "@finance-ttijari/api/allocations/money";
+import { splitEqually } from "@attijari-flare/api/allocations/math";
+import { centimesToMad, parseMadToCentimes } from "@attijari-flare/api/allocations/money";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import { Check, Plus, Trash } from "lucide";
 import { createMemo, createSignal, For, Show } from "solid-js";

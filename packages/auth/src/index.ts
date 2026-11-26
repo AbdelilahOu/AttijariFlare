@@ -1,7 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
-import type { Database } from "@finance-ttijari/db";
-import * as schema from "@finance-ttijari/db/schema/auth";
-import { seedDefaultCategories } from "@finance-ttijari/db/seed";
+import type { Database } from "@attijari-flare/db";
+import * as schema from "@attijari-flare/db/schema/auth";
+import { seedDefaultCategories } from "@attijari-flare/db/seed";
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 

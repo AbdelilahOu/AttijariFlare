@@ -1,4 +1,4 @@
-import { createClient, type AuthClient } from "@finance-ttijari/auth/client";
+import { createClient, type AuthClient } from "@attijari-flare/auth/client";
 
 import { ENV } from "./env.public";
 

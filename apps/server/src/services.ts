@@ -1,5 +1,5 @@
-import { createAuth as createConfiguredAuth } from "@finance-ttijari/auth";
-import { type Database, createDb } from "@finance-ttijari/db";
+import { createAuth as createConfiguredAuth } from "@attijari-flare/auth";
+import { type Database, createDb } from "@attijari-flare/db";
 
 import { ENV } from "./env.server";
 

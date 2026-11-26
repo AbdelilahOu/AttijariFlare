@@ -1,4 +1,4 @@
-import { listTransactionMonths, listTransactions } from "@finance-ttijari/db/queries";
+import { listTransactionMonths, listTransactions } from "@attijari-flare/db/queries";
 
 import { correctCategory } from "../categorization/correct";
 import { mapServiceError } from "../errors";

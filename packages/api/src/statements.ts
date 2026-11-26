@@ -1,4 +1,4 @@
-import { isUniqueConstraintViolation } from "@finance-ttijari/db/errors";
+import { isUniqueConstraintViolation } from "@attijari-flare/db/errors";
 import {
   deleteStatementRow,
   findStatementBySha,
@@ -7,9 +7,9 @@ import {
   insertStatement,
   listStatements as listStatementsQuery,
   markStatementFailed,
-} from "@finance-ttijari/db/queries";
-import type { Database } from "@finance-ttijari/db";
-import type { Statement } from "@finance-ttijari/db/schema/index";
+} from "@attijari-flare/db/queries";
+import type { Database } from "@attijari-flare/db";
+import type { Statement } from "@attijari-flare/db/schema/index";
 
 import type { Bindings } from "./bindings";
 import { ServiceError } from "./errors";

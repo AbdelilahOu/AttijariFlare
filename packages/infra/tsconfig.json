@@ -1,4 +1,4 @@
 {
-  "extends": "@finance-ttijari/config/tsconfig.base.json",
+  "extends": "@attijari-flare/config/tsconfig.base.json",
   "include": ["alchemy.dev.ts", "alchemy.preview.ts", "alchemy.prod.ts"]
 }

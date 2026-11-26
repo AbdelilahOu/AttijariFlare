@@ -3,7 +3,7 @@ import {
   getNeedsReviewRaw,
   getSpendByCategoryRaw,
   listReportStatements,
-} from "@finance-ttijari/db/queries";
+} from "@attijari-flare/db/queries";
 
 import { protectedProcedure } from "../index";
 import {

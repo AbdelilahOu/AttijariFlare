@@ -1,4 +1,4 @@
-import { transactionTypes } from "@finance-ttijari/db/schema/enums";
+import { transactionTypes } from "@attijari-flare/db/schema/enums";
 import { z } from "zod";
 
 // Each part is one INSERT in the batch; keep the batch small for D1 and the 10 ms CPU budget.

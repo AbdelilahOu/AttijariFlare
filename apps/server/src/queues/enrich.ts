@@ -1,6 +1,6 @@
-import type { TxnEnrichMessage } from "@finance-ttijari/api/bindings";
-import { enrichStatement, PermanentEnrichError } from "@finance-ttijari/api/categorization/enrich";
-import { createDb } from "@finance-ttijari/db";
+import type { TxnEnrichMessage } from "@attijari-flare/api/bindings";
+import { enrichStatement, PermanentEnrichError } from "@attijari-flare/api/categorization/enrich";
+import { createDb } from "@attijari-flare/db";
 
 import type { CloudflareEnv } from "../../cloudflare-env";
 

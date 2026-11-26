@@ -1,4 +1,4 @@
-import type { Context as ApiContext } from "@finance-ttijari/api/context";
+import type { Context as ApiContext } from "@attijari-flare/api/context";
 import type { Context as HonoContext } from "hono";
 
 import { ENV } from "./env.server";

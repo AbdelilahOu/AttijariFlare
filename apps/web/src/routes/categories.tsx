@@ -1,4 +1,4 @@
-import { categoryKinds } from "@finance-ttijari/api/enums";
+import { categoryKinds } from "@attijari-flare/api/enums";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import { Pencil, Plus, Tags, Trash } from "lucide";
 import { createSignal, For, Show } from "solid-js";

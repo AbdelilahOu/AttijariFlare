@@ -1,5 +1,5 @@
-import type { Database } from "@finance-ttijari/db";
-import { isUniqueConstraintViolation } from "@finance-ttijari/db/errors";
+import type { Database } from "@attijari-flare/db";
+import { isUniqueConstraintViolation } from "@attijari-flare/db/errors";
 import {
   categoryHasChildren,
   countAllocationsUsingCategory,
@@ -8,7 +8,7 @@ import {
   getCategoryParent,
   listCategoriesWithUsage,
   updateCategory,
-} from "@finance-ttijari/db/queries";
+} from "@attijari-flare/db/queries";
 import { ORPCError } from "@orpc/server";
 
 import { protectedProcedure } from "../index";

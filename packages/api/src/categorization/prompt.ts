@@ -1,4 +1,4 @@
-import type { CategoryKind, TransactionType } from "@finance-ttijari/db/schema/enums";
+import type { CategoryKind, TransactionType } from "@attijari-flare/db/schema/enums";
 import { z } from "zod";
 
 import type { ChatMessage } from "../extraction/prompt";

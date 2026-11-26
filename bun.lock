@@ -8,8 +8,8 @@
         "zod": "catalog:",
       },
       "devDependencies": {
+        "@attijari-flare/config": "workspace:*",
         "@cloudflare/workers-types": "catalog:",
-        "@finance-ttijari/config": "workspace:*",
         "@types/node": "catalog:",
         "rolldown": "1.3.2",
         "typescript": "catalog:",
@@ -21,9 +21,9 @@
     "apps/server": {
       "name": "server",
       "dependencies": {
-        "@finance-ttijari/api": "workspace:*",
-        "@finance-ttijari/auth": "workspace:*",
-        "@finance-ttijari/db": "workspace:*",
+        "@attijari-flare/api": "workspace:*",
+        "@attijari-flare/auth": "workspace:*",
+        "@attijari-flare/db": "workspace:*",
         "@orpc/openapi": "catalog:",
         "@orpc/server": "catalog:",
         "@orpc/zod": "catalog:",
@@ -34,9 +34,9 @@
         "zod": "catalog:",
       },
       "devDependencies": {
+        "@attijari-flare/config": "workspace:*",
+        "@attijari-flare/infra": "workspace:*",
         "@cloudflare/workers-types": "catalog:",
-        "@finance-ttijari/config": "workspace:*",
-        "@finance-ttijari/infra": "workspace:*",
         "@types/node": "catalog:",
         "tsdown": "^0.23.7",
         "typescript": "catalog:",
@@ -45,8 +45,8 @@
     "apps/web": {
       "name": "web",
       "dependencies": {
-        "@finance-ttijari/api": "workspace:*",
-        "@finance-ttijari/auth": "workspace:*",
+        "@attijari-flare/api": "workspace:*",
+        "@attijari-flare/auth": "workspace:*",
         "@fontsource-variable/readex-pro": "^5.3.0",
         "@orpc/client": "catalog:",
         "@orpc/server": "catalog:",
@@ -62,7 +62,7 @@
         "zod": "catalog:",
       },
       "devDependencies": {
-        "@finance-ttijari/config": "workspace:*",
+        "@attijari-flare/config": "workspace:*",
         "@solidjs/vite-plugin": "^3.0.1",
         "@tailwindcss/vite": "^4.3.5",
         "filesystem-routing": "0.5.0",
@@ -72,10 +72,10 @@
       },
     },
     "packages/api": {
-      "name": "@finance-ttijari/api",
+      "name": "@attijari-flare/api",
       "dependencies": {
-        "@finance-ttijari/auth": "workspace:*",
-        "@finance-ttijari/db": "workspace:*",
+        "@attijari-flare/auth": "workspace:*",
+        "@attijari-flare/db": "workspace:*",
         "@orpc/client": "catalog:",
         "@orpc/openapi": "catalog:",
         "@orpc/server": "catalog:",
@@ -84,31 +84,31 @@
         "zod": "catalog:",
       },
       "devDependencies": {
-        "@finance-ttijari/config": "workspace:*",
+        "@attijari-flare/config": "workspace:*",
         "typescript": "catalog:",
       },
     },
     "packages/auth": {
-      "name": "@finance-ttijari/auth",
+      "name": "@attijari-flare/auth",
       "dependencies": {
+        "@attijari-flare/db": "workspace:*",
         "@better-auth/core": "1.7.22",
         "@better-auth/drizzle-adapter": "1.7.22",
-        "@finance-ttijari/db": "workspace:*",
         "better-auth": "catalog:",
         "drizzle-orm": "catalog:",
         "zod": "catalog:",
       },
       "devDependencies": {
-        "@finance-ttijari/config": "workspace:*",
+        "@attijari-flare/config": "workspace:*",
         "typescript": "catalog:",
       },
     },
     "packages/config": {
-      "name": "@finance-ttijari/config",
+      "name": "@attijari-flare/config",
       "version": "0.0.0",
     },
     "packages/db": {
-      "name": "@finance-ttijari/db",
+      "name": "@attijari-flare/db",
       "dependencies": {
         "@libsql/client": "0.18.0",
         "drizzle-orm": "catalog:",
@@ -116,22 +116,22 @@
         "zod": "catalog:",
       },
       "devDependencies": {
-        "@finance-ttijari/config": "workspace:*",
+        "@attijari-flare/config": "workspace:*",
         "drizzle-kit": "1.0.0-rc.5",
         "typescript": "catalog:",
         "varlock": "catalog:",
       },
     },
     "packages/infra": {
-      "name": "@finance-ttijari/infra",
+      "name": "@attijari-flare/infra",
       "dependencies": {
         "zod": "catalog:",
       },
       "devDependencies": {
         "@alchemy.run/cloudflare": "2.0.0-beta.86",
+        "@attijari-flare/config": "workspace:*",
         "@effect/platform-bun": "4.1.4",
         "@effect/platform-node": "4.1.4",
-        "@finance-ttijari/config": "workspace:*",
         "alchemy": "2.0.0-beta.86",
         "effect": "4.1.4",
         "typescript": "catalog:",
@@ -173,6 +173,16 @@
     "@alchemy.run/sql": ["@alchemy.run/sql@2.0.0-beta.86", "", { "peerDependencies": { "@effect/sql-libsql": "^4.1.4", "@effect/sql-mysql2": "^4.1.4", "@effect/sql-pg": "^4.1.4", "alchemy": "2.0.0-beta.86", "effect": "^4.1.4", "mysql2": "^3.24.2", "pg": "^8.22.0" }, "optionalPeers": ["@effect/sql-libsql", "@effect/sql-mysql2", "@effect/sql-pg", "mysql2", "pg"] }, "sha512-fkYV4hnrj+XgS63Tr8TFWYkEC1vHPrKL1J3S3c0jQAeqQsNBPSpp7rAWjj7g9msnAtTRwBn2YaSfbSMoPZFSIw=="],
 
     "@ampproject/remapping": ["@ampproject/remapping@2.3.0", "", { "dependencies": { "@jridgewell/gen-mapping": "^0.3.5", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw=="],
+
+    "@attijari-flare/api": ["@attijari-flare/api@workspace:packages/api"],
+
+    "@attijari-flare/auth": ["@attijari-flare/auth@workspace:packages/auth"],
+
+    "@attijari-flare/config": ["@attijari-flare/config@workspace:packages/config"],
+
+    "@attijari-flare/db": ["@attijari-flare/db@workspace:packages/db"],
+
+    "@attijari-flare/infra": ["@attijari-flare/infra@workspace:packages/infra"],
 
     "@babel/code-frame": ["@babel/code-frame@7.29.7", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.29.7", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw=="],
 
@@ -241,16 +251,6 @@
     "@emnapi/runtime": ["@emnapi/runtime@2.0.0-beta.2", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-JcrSPzPvZuNZvJqPTF9Fw25LbOJ8avzFVlaf2grmH4Cku0oGP47tRgqPZadcfj3YoZMHkFVnCYFbQM8I+i5QEw=="],
 
     "@emnapi/wasi-threads": ["@emnapi/wasi-threads@2.2.0", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-JP7OYH38Q7+pyTAe14raZHLQIK7BDKbdwji+Xi3pcd/6QkJYQH3SX4wu6EplGrGJWRepoNzedfm0G3B9Z4e9Rw=="],
-
-    "@finance-ttijari/api": ["@finance-ttijari/api@workspace:packages/api"],
-
-    "@finance-ttijari/auth": ["@finance-ttijari/auth@workspace:packages/auth"],
-
-    "@finance-ttijari/config": ["@finance-ttijari/config@workspace:packages/config"],
-
-    "@finance-ttijari/db": ["@finance-ttijari/db@workspace:packages/db"],
-
-    "@finance-ttijari/infra": ["@finance-ttijari/infra@workspace:packages/infra"],
 
     "@fontsource-variable/readex-pro": ["@fontsource-variable/readex-pro@5.3.0", "", {}, "sha512-ebrEcz8sjzQk92x6K3WtYzOgEKTIDe5D+iPqef0YYvPdqCfxzVkRgpsog5POX4sWa7e4wccCQ1IhmMuRka2hZg=="],
 

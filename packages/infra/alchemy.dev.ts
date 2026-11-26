@@ -62,7 +62,7 @@ export const server = Cloudflare.Worker("server", {
 export type ServerEnv = Cloudflare.InferEnv<typeof server>;
 
 export default Alchemy.Stack(
-  "finance-ttijari",
+  "attijari-flare",
   {
     providers: Cloudflare.providers(),
     // State lives on Cloudflare, so CI and local runs share it per stage.

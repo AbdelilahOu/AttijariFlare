@@ -1,4 +1,4 @@
-import type { AppRouterClient } from "@finance-ttijari/api/routers/index";
+import type { AppRouterClient } from "@attijari-flare/api/routers/index";
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";

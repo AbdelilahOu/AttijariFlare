@@ -1,5 +1,5 @@
 {
-  "name": "@finance-ttijari/db",
+  "name": "@attijari-flare/db",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
@@ -19,7 +19,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@finance-ttijari/config": "workspace:*",
+    "@attijari-flare/config": "workspace:*",
     "drizzle-kit": "1.0.0-rc.5",
     "typescript": "catalog:",
     "varlock": "catalog:"

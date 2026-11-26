@@ -1,5 +1,5 @@
-import type { Database } from "@finance-ttijari/db";
-import { getTransactionForAllocation, listAllocations } from "@finance-ttijari/db/queries";
+import type { Database } from "@attijari-flare/db";
+import { getTransactionForAllocation, listAllocations } from "@attijari-flare/db/queries";
 
 import { effectiveCategoryBreakdown, summarizeAllocations } from "./math";
 

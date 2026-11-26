@@ -1,5 +1,5 @@
-import type { Database } from "@finance-ttijari/db";
-import { getStatementForReextract, markStatementUploaded } from "@finance-ttijari/db/queries";
+import type { Database } from "@attijari-flare/db";
+import { getStatementForReextract, markStatementUploaded } from "@attijari-flare/db/queries";
 
 import type { Bindings } from "../bindings";
 import { ServiceError } from "../errors";

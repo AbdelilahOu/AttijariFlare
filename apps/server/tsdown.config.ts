@@ -6,7 +6,7 @@ export default defineConfig({
   outDir: "./dist",
   clean: true,
   deps: {
-    alwaysBundle: [/@finance-ttijari\/.*/],
+    alwaysBundle: [/@attijari-flare\/.*/],
     neverBundle: ["cloudflare:workers"],
   },
 });

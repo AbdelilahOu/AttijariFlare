@@ -1,4 +1,4 @@
-import { transactionTypes } from "@finance-ttijari/db/schema/enums";
+import { transactionTypes } from "@attijari-flare/db/schema/enums";
 import { z } from "zod";
 
 export const listTransactionsSchema = z

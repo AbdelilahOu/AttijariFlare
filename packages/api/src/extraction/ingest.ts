@@ -1,6 +1,6 @@
-import type { Database } from "@finance-ttijari/db";
-import { getStatementForExtraction, markStatementExtracting } from "@finance-ttijari/db/queries";
-import { type NewTransaction, statements, transactions } from "@finance-ttijari/db/schema/index";
+import type { Database } from "@attijari-flare/db";
+import { getStatementForExtraction, markStatementExtracting } from "@attijari-flare/db/queries";
+import { type NewTransaction, statements, transactions } from "@attijari-flare/db/schema/index";
 import { and, eq, inArray } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 

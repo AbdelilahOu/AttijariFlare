@@ -1,5 +1,5 @@
-import type { Session } from "@finance-ttijari/auth";
-import type { Database } from "@finance-ttijari/db";
+import type { Session } from "@attijari-flare/auth";
+import type { Database } from "@attijari-flare/db";
 
 import type { Bindings } from "./bindings";
 

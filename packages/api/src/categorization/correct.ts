@@ -1,10 +1,10 @@
-import type { Database } from "@finance-ttijari/db";
+import type { Database } from "@attijari-flare/db";
 import {
   applyCategoryCorrection,
   getOwnedCategory,
   getTransactionWithMerchant,
   setTransactionCategoryByUser,
-} from "@finance-ttijari/db/queries";
+} from "@attijari-flare/db/queries";
 
 import type { Bindings } from "../bindings";
 import { ServiceError } from "../errors";

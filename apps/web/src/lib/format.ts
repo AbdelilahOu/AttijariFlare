@@ -1,4 +1,4 @@
-import { centimesToMad } from "@finance-ttijari/api/allocations/money";
+import { centimesToMad } from "@attijari-flare/api/allocations/money";
 
 // Display formatting for money, months and dates. Amounts are integer centimes.
 

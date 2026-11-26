@@ -1,4 +1,4 @@
-import type { StatementSummary } from "@finance-ttijari/api/statements";
+import type { StatementSummary } from "@attijari-flare/api/statements";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import { CircleCheck, CloudUpload, ExternalLink, FileText, Trash } from "lucide";
 import { createSignal, createStore, For, Show } from "solid-js";

@@ -1,5 +1,5 @@
 {
-  "name": "@finance-ttijari/api",
+  "name": "@attijari-flare/api",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
@@ -11,8 +11,8 @@
     "test": "vp test run"
   },
   "dependencies": {
-    "@finance-ttijari/auth": "workspace:*",
-    "@finance-ttijari/db": "workspace:*",
+    "@attijari-flare/auth": "workspace:*",
+    "@attijari-flare/db": "workspace:*",
     "@orpc/client": "catalog:",
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
@@ -21,7 +21,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@finance-ttijari/config": "workspace:*",
+    "@attijari-flare/config": "workspace:*",
     "typescript": "catalog:"
   }
 }

@@ -33,7 +33,7 @@ export const merchants = Cloudflare.Vectorize.Index("merchants", {
 });
 
 export default Alchemy.Stack(
-  "finance-ttijari",
+  "attijari-flare",
   {
     providers: Cloudflare.providers(),
     // State lives on Cloudflare, so CI and local runs share it per stage.

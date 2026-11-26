@@ -1,5 +1,5 @@
 {
-  "extends": "@finance-ttijari/config/tsconfig.base.json",
+  "extends": "@attijari-flare/config/tsconfig.base.json",
   "references": [{ "path": "../../packages/api" }],
   "compilerOptions": {
     "noEmit": true,

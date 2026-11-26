@@ -5,14 +5,15 @@
   "scripts": {
     "build": "tsc -b ../../packages/api && vp build",
     "check-types": "tsc -b ../../packages/api && tsc --noEmit",
+    "lint": "vp lint .",
     "start": "vp preview",
     "preview": "vp preview",
     "dev:bare": "vp dev",
     "env:generate": "varlock codegen"
   },
   "dependencies": {
-    "@finance-ttijari/api": "workspace:*",
-    "@finance-ttijari/auth": "workspace:*",
+    "@attijari-flare/api": "workspace:*",
+    "@attijari-flare/auth": "workspace:*",
     "@fontsource-variable/readex-pro": "^5.3.0",
     "@orpc/client": "catalog:",
     "@orpc/server": "catalog:",
@@ -28,7 +29,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@finance-ttijari/config": "workspace:*",
+    "@attijari-flare/config": "workspace:*",
     "@solidjs/vite-plugin": "^3.0.1",
     "@tailwindcss/vite": "^4.3.5",
     "filesystem-routing": "0.5.0",

@@ -1,7 +1,7 @@
-import type { StatementIngestMessage } from "@finance-ttijari/api/bindings";
-import { ingestStatement, PermanentIngestError } from "@finance-ttijari/api/extraction/ingest";
-import { createDb } from "@finance-ttijari/db";
-import { statements } from "@finance-ttijari/db/schema/index";
+import type { StatementIngestMessage } from "@attijari-flare/api/bindings";
+import { ingestStatement, PermanentIngestError } from "@attijari-flare/api/extraction/ingest";
+import { createDb } from "@attijari-flare/db";
+import { statements } from "@attijari-flare/db/schema/index";
 import { eq } from "drizzle-orm";
 
 import type { CloudflareEnv } from "../../cloudflare-env";

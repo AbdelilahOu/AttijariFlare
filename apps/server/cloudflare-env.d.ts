@@ -1,5 +1,5 @@
-import type { Bindings } from "@finance-ttijari/api/bindings";
-import type { ServerEnv } from "@finance-ttijari/infra/alchemy.dev";
+import type { Bindings } from "@attijari-flare/api/bindings";
+import type { ServerEnv } from "@attijari-flare/infra/alchemy.dev";
 
 // This file infers types for the cloudflare:workers environment from your Alchemy Worker.
 // @see https://alchemy.run/cloudflare/compute/workers

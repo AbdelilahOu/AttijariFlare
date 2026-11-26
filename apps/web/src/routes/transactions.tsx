@@ -1,4 +1,4 @@
-import { transactionTypes } from "@finance-ttijari/api/enums";
+import { transactionTypes } from "@attijari-flare/api/enums";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import {
   ChevronLeft,

@@ -1,11 +1,11 @@
-import { appRouter } from "@finance-ttijari/api/routers/index";
+import { appRouter } from "@attijari-flare/api/routers/index";
 import {
   StatementError,
   MAX_STATEMENT_BYTES,
   createStatement,
   getStatementPdf,
   statementErrorStatus,
-} from "@finance-ttijari/api/statements";
+} from "@attijari-flare/api/statements";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError } from "@orpc/server";

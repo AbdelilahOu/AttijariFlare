@@ -1,4 +1,4 @@
-import type { StatementIngestMessage, TxnEnrichMessage } from "@finance-ttijari/api/bindings";
+import type { StatementIngestMessage, TxnEnrichMessage } from "@attijari-flare/api/bindings";
 
 import type { CloudflareEnv } from "../../cloudflare-env";
 import { handleTxnEnrich } from "./enrich";

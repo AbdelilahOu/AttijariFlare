@@ -1,6 +1,6 @@
-import type { Database } from "@finance-ttijari/db";
-import type { TransactionType } from "@finance-ttijari/db/schema/enums";
-import { categories, merchants, statements, transactions } from "@finance-ttijari/db/schema/index";
+import type { Database } from "@attijari-flare/db";
+import type { TransactionType } from "@attijari-flare/db/schema/enums";
+import { categories, merchants, statements, transactions } from "@attijari-flare/db/schema/index";
 import { and, count, eq, inArray, isNotNull, isNull, ne, or, sql } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 

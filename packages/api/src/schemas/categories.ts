@@ -1,4 +1,4 @@
-import { categoryKinds } from "@finance-ttijari/db/schema/enums";
+import { categoryKinds } from "@attijari-flare/db/schema/enums";
 import { z } from "zod";
 
 const name = z.string().trim().min(1).max(60);
