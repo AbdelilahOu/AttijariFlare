@@ -3,6 +3,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./queries": "./src/queries/index.ts",
     "./*": "./src/*.ts"
   },
   "scripts": {

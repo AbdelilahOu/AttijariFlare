@@ -4,5 +4,6 @@ export * from "./fingerprint";
 export * from "./money";
 export * from "./prompt";
 export * from "./reconcile";
+export * from "./reextract";
 export * from "./schema";
 export * from "./stale";

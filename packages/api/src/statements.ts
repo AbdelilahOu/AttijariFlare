@@ -1,6 +1,15 @@
+import { isUniqueConstraintViolation } from "@finance-ttijari/db/errors";
+import {
+  deleteStatementRow,
+  findStatementBySha,
+  getStatementFile,
+  getStatementSummary,
+  insertStatement,
+  listStatements as listStatementsQuery,
+  markStatementFailed,
+} from "@finance-ttijari/db/queries";
 import type { Database } from "@finance-ttijari/db";
-import { type Statement, statements, transactions } from "@finance-ttijari/db/schema/index";
-import { and, count, desc, eq } from "drizzle-orm";
+import type { Statement } from "@finance-ttijari/db/schema/index";
 
 import type { Bindings } from "./bindings";
 
@@ -52,16 +61,6 @@ async function sha256Hex(bytes: ArrayBuffer): Promise<string> {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-function isUniqueViolation(error: unknown): boolean {
-  for (let current: unknown = error; current; current = (current as { cause?: unknown }).cause) {
-    if (current instanceof Error && current.message.includes("UNIQUE constraint failed")) {
-      return true;
-    }
-    if (typeof current !== "object") break;
-  }
-  return false;
-}
-
 function sanitizeFileName(name: string): string {
   const base = name.split(/[\\/]/).pop()?.trim() ?? "";
   // Keep the name printable and bounded; it is only displayed and used in Content-Disposition.
@@ -73,15 +72,6 @@ function sanitizeFileName(name: string): string {
     .join("")
     .slice(0, 200);
   return cleaned || "statement.pdf";
-}
-
-async function findBySha(deps: StatementDeps, sha256: string) {
-  const [row] = await deps.db
-    .select({ id: statements.id })
-    .from(statements)
-    .where(and(eq(statements.userId, deps.userId), eq(statements.sha256, sha256)))
-    .limit(1);
-  return row;
 }
 
 /**
@@ -106,7 +96,7 @@ export async function createStatement(deps: StatementDeps, file: File): Promise<
   }
 
   const sha256 = await sha256Hex(buffer);
-  const duplicate = await findBySha(deps, sha256);
+  const duplicate = await findStatementBySha(deps.db, { userId: deps.userId, sha256 });
   if (duplicate) {
     throw new StatementError("CONFLICT", "This statement has already been uploaded.", duplicate.id);
   }
@@ -123,17 +113,21 @@ export async function createStatement(deps: StatementDeps, file: File): Promise<
 
   let statement: Statement;
   try {
-    const [inserted] = await deps.db
-      .insert(statements)
-      .values({ id, userId: deps.userId, r2Key, fileName, sha256, status: "uploaded" })
-      .returning();
+    const inserted = await insertStatement(deps.db, {
+      id,
+      userId: deps.userId,
+      r2Key,
+      fileName,
+      sha256,
+      status: "uploaded",
+    });
     if (!inserted) throw new Error("Statement insert returned no row.");
     statement = inserted;
   } catch (error) {
     await deps.env.STATEMENTS.delete(r2Key);
-    if (isUniqueViolation(error)) {
+    if (isUniqueConstraintViolation(error)) {
       // Lost a race with a concurrent upload of the same file.
-      const existing = await findBySha(deps, sha256);
+      const existing = await findStatementBySha(deps.db, { userId: deps.userId, sha256 });
       throw new StatementError(
         "CONFLICT",
         "This statement has already been uploaded.",
@@ -147,65 +141,32 @@ export async function createStatement(deps: StatementDeps, file: File): Promise<
     await deps.env.STATEMENT_INGEST.send({ statementId: id });
   } catch (error) {
     console.error("statement-ingest: failed to enqueue", id, error);
-    const [failed] = await deps.db
-      .update(statements)
-      .set({ status: "failed", error: "Could not queue the statement for extraction." })
-      .where(eq(statements.id, id))
-      .returning();
+    const failed = await markStatementFailed(deps.db, {
+      id,
+      error: "Could not queue the statement for extraction.",
+    });
     return failed ?? statement;
   }
 
   return statement;
 }
 
-const statementSummaryColumns = {
-  id: statements.id,
-  fileName: statements.fileName,
-  accountLabel: statements.accountLabel,
-  periodStart: statements.periodStart,
-  periodEnd: statements.periodEnd,
-  openingBalance: statements.openingBalance,
-  closingBalance: statements.closingBalance,
-  status: statements.status,
-  error: statements.error,
-  model: statements.model,
-  createdAt: statements.createdAt,
-  updatedAt: statements.updatedAt,
-  transactionCount: count(transactions.id),
-};
-
-function summaryQuery(db: Database) {
-  return db
-    .select(statementSummaryColumns)
-    .from(statements)
-    .leftJoin(transactions, eq(transactions.statementId, statements.id))
-    .groupBy(statements.id);
-}
-
 export type StatementSummary = Awaited<ReturnType<typeof listStatements>>[number];
 
 /** All statements of the user, newest period first (unparsed uploads first). */
 export async function listStatements(deps: Pick<StatementDeps, "db" | "userId">) {
-  return summaryQuery(deps.db)
-    .where(eq(statements.userId, deps.userId))
-    .orderBy(desc(statements.periodStart), desc(statements.createdAt));
+  return listStatementsQuery(deps.db, { userId: deps.userId });
 }
 
 export async function getStatement(deps: Pick<StatementDeps, "db" | "userId">, id: string) {
-  const [row] = await summaryQuery(deps.db)
-    .where(and(eq(statements.id, id), eq(statements.userId, deps.userId)))
-    .limit(1);
+  const row = await getStatementSummary(deps.db, { userId: deps.userId, id });
   if (!row) throw new StatementError("NOT_FOUND", "Statement not found.");
   return row;
 }
 
 /** Returns the original PDF object if the statement belongs to the user. */
 export async function getStatementPdf(deps: StatementDeps, id: string) {
-  const [row] = await deps.db
-    .select({ r2Key: statements.r2Key, fileName: statements.fileName })
-    .from(statements)
-    .where(and(eq(statements.id, id), eq(statements.userId, deps.userId)))
-    .limit(1);
+  const row = await getStatementFile(deps.db, { userId: deps.userId, id });
   if (!row) throw new StatementError("NOT_FOUND", "Statement not found.");
 
   const object = await deps.env.STATEMENTS.get(row.r2Key);
@@ -226,10 +187,7 @@ async function deletePrefix(bucket: R2Bucket, prefix: string): Promise<void> {
 
 /** Deletes the statement row (D1 cascades its transactions) and every R2 object under its prefix. */
 export async function deleteStatement(deps: StatementDeps, id: string): Promise<void> {
-  const deleted = await deps.db
-    .delete(statements)
-    .where(and(eq(statements.id, id), eq(statements.userId, deps.userId)))
-    .returning({ id: statements.id });
+  const deleted = await deleteStatementRow(deps.db, { userId: deps.userId, id });
   if (deleted.length === 0) throw new StatementError("NOT_FOUND", "Statement not found.");
 
   await deletePrefix(deps.env.STATEMENTS, statementPrefix(id));

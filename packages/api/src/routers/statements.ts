@@ -1,7 +1,7 @@
 import { ORPCError } from "@orpc/server";
-import { z } from "zod";
 
 import { protectedProcedure } from "../index";
+import { statementIdSchema, uploadStatementSchema } from "../schemas/statements";
 import {
   StatementError,
   createStatement,
@@ -28,8 +28,6 @@ async function run<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-const idInput = z.object({ id: z.string().min(1) });
-
 // Uploads normally go through the Hono route `POST /api/statements` (it reports upload
 // progress to the browser); this procedure is the typed equivalent for oRPC clients.
 export const statementsRouter = {
@@ -37,12 +35,12 @@ export const statementsRouter = {
     run(() => listStatements({ db: context.db, userId: context.session.user.id })),
   ),
   get: protectedProcedure
-    .input(idInput)
+    .input(statementIdSchema)
     .handler(({ context, input }) =>
       run(() => getStatement({ db: context.db, userId: context.session.user.id }, input.id)),
     ),
   upload: protectedProcedure
-    .input(z.object({ file: z.instanceof(File) }))
+    .input(uploadStatementSchema)
     .handler(({ context, input }) =>
       run(() =>
         createStatement(
@@ -51,7 +49,7 @@ export const statementsRouter = {
         ),
       ),
     ),
-  delete: protectedProcedure.input(idInput).handler(async ({ context, input }) => {
+  delete: protectedProcedure.input(statementIdSchema).handler(async ({ context, input }) => {
     await run(() =>
       deleteStatement(
         { db: context.db, env: context.env, userId: context.session.user.id },

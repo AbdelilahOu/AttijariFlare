@@ -1,4 +1,5 @@
 import type { Database } from "@finance-ttijari/db";
+import { getStatementForExtraction, markStatementExtracting } from "@finance-ttijari/db/queries";
 import { type NewTransaction, statements, transactions } from "@finance-ttijari/db/schema/index";
 import { and, eq, inArray } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
@@ -59,19 +60,12 @@ export async function ingestStatement(
   statementId: string,
 ): Promise<IngestResult> {
   const { db, env } = deps;
-  const [statement] = await db
-    .select()
-    .from(statements)
-    .where(eq(statements.id, statementId))
-    .limit(1);
+  const statement = await getStatementForExtraction(db, { id: statementId });
   if (!statement) {
     throw new PermanentIngestError("statement_not_found");
   }
 
-  await db
-    .update(statements)
-    .set({ status: "extracting", error: null })
-    .where(eq(statements.id, statementId));
+  await markStatementExtracting(db, { id: statementId });
 
   const pdf = await env.STATEMENTS.get(statement.r2Key || statementOriginalKey(statementId));
   if (!pdf) {

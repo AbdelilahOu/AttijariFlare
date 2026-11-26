@@ -33,11 +33,6 @@ export function summarizeAllocations(
   return { total, allocated, remainder: total - allocated };
 }
 
-/**
- * Checks a full set of parts for one transaction: the transaction must be a debit,
- * every part a positive integer, and the parts must not exceed |amount|.
- * An empty list is valid (it clears the allocations).
- */
 export function validateAllocations(
   transactionAmount: number,
   parts: readonly { amount: number }[],
