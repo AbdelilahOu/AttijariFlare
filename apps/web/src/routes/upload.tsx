@@ -1,3 +1,4 @@
+import Seo from "~/components/seo";
 import type { StatementSummary } from "@attijari-flare/api/statements";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import { CircleCheck, CloudUpload, ExternalLink, FileText, Trash } from "lucide";
@@ -72,9 +73,12 @@ function formatSize(bytes: number): string {
 
 export default function Upload() {
   return (
-    <RequireSession>
-      <UploadPage />
-    </RequireSession>
+    <>
+      <Seo title="Statements - AttijariFlare" path="/upload" noindex />
+      <RequireSession>
+        <UploadPage />
+      </RequireSession>
+    </>
   );
 }
 

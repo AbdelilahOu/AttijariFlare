@@ -1,4 +1,5 @@
-@import "@fontsource-variable/readex-pro/full.css";
+@import "@fontsource-variable/inter/wght.css";
+@import "@fontsource-variable/noto-sans-arabic/wght.css";
 @import "tailwindcss";
 
 /*
@@ -64,7 +65,7 @@
 }
 
 @theme {
-  --font-sans: "Readex Pro Variable", "Segoe UI", system-ui, sans-serif;
+  --font-sans: "Inter Variable", "Noto Sans Arabic Variable", "Segoe UI", system-ui, sans-serif;
 
   --text-xs: 0.8125rem;
   --text-xs--line-height: 1.35;
@@ -142,9 +143,8 @@
   h1,
   h2,
   h3 {
-    font-variation-settings: "HEXP" 40;
     text-wrap: balance;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
   }
 
   ::selection {
