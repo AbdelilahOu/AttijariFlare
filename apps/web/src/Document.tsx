@@ -1,7 +1,7 @@
 import { HydrationScript } from "@solidjs/web";
 import type { ParentProps } from "solid-js";
 
-import latinFont from "@fontsource-variable/readex-pro/files/readex-pro-latin-full-normal.woff2?url";
+import latinFont from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
 
 import { THEME_SCRIPT } from "~/lib/theme";
 

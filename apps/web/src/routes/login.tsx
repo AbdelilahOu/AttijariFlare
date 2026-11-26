@@ -26,10 +26,7 @@ export default function Login() {
             draw
             class="pointer-events-none absolute -top-24 -right-24 size-[30rem] text-flare/35"
           />
-          <p
-            class="relative max-w-[18ch] text-3xl leading-tight font-semibold"
-            style={{ "font-variation-settings": '"HEXP" 60' }}
-          >
+          <p class="relative max-w-[18ch] text-3xl leading-tight font-semibold">
             Every dirham from your statements, in its place.
           </p>
           <p class="relative mt-4 max-w-[44ch] text-rail-ink-soft">

@@ -313,7 +313,6 @@ function Hero(props: { signedIn: boolean }) {
           <h1
             id="hero-title"
             class="mt-3 max-w-[17ch] text-3xl leading-[1.08] font-semibold sm:text-[2.75rem]"
-            style={{ "font-variation-settings": '"HEXP" 70' }}
           >
             Your bank statement, turned into a budget in MAD.
           </h1>

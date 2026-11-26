@@ -56,7 +56,6 @@ function Wordmark(props: { class?: string }) {
     <a
       href="/"
       class={`inline-flex items-center gap-2.5 rounded-control font-semibold ${props.class ?? ""}`}
-      style={{ "font-variation-settings": '"HEXP" 80' }}
     >
       <span class="grid size-8 place-items-center rounded-full bg-flare/15 text-flare">
         <Guilloche class="size-7" />
