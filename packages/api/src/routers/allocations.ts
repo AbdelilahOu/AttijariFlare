@@ -1,3 +1,4 @@
+import type { Database } from "@finance-ttijari/db";
 import {
   deleteAllocation,
   getTransactionForAllocation,
@@ -8,8 +9,8 @@ import {
 } from "@finance-ttijari/db/queries";
 import { ORPCError } from "@orpc/server";
 
-import { allocationState } from "../allocations/service";
 import { describeAllocationIssue, validateAllocations } from "../allocations/math";
+import { allocationState } from "../allocations/service";
 import { protectedProcedure } from "../index";
 import {
   deleteAllocationSchema,
@@ -18,7 +19,7 @@ import {
   setAllocationsSchema,
 } from "../schemas/allocations";
 
-async function requireAllocationState(db: Parameters<typeof allocationState>[0], userId: string, transactionId: string) {
+async function requireAllocationState(db: Database, userId: string, transactionId: string) {
   const state = await allocationState(db, userId, transactionId);
   if (!state) throw new ORPCError("NOT_FOUND", { message: "Transaction not found" });
   return state;

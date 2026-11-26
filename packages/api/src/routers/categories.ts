@@ -1,3 +1,4 @@
+import type { Database } from "@finance-ttijari/db";
 import { isUniqueConstraintViolation } from "@finance-ttijari/db/errors";
 import {
   categoryHasChildren,
@@ -14,7 +15,7 @@ import { protectedProcedure } from "../index";
 import { createCategorySchema, deleteCategorySchema, updateCategorySchema } from "../schemas/categories";
 
 async function assertValidParent(
-  db: Parameters<typeof getCategoryParent>[0],
+  db: Database,
   userId: string,
   parentId: string,
   selfId?: string,

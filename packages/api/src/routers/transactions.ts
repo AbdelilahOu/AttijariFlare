@@ -1,17 +1,10 @@
 import { listTransactionMonths, listTransactions } from "@finance-ttijari/db/queries";
-import { ORPCError } from "@orpc/server";
 
-import { CorrectCategoryError, correctCategory } from "../categorization/correct";
+import { correctCategory } from "../categorization/correct";
+import { mapServiceError } from "../errors";
 import { normalizeDescription } from "../extraction/fingerprint";
 import { protectedProcedure } from "../index";
 import { listTransactionsSchema, setTransactionCategorySchema } from "../schemas/transactions";
-
-function toORPCError(error: unknown): unknown {
-  if (error instanceof CorrectCategoryError) {
-    return new ORPCError(error.code, { message: error.message });
-  }
-  return error;
-}
 
 export const transactionsRouter = {
   /** Filtered, paginated transactions, newest first, with category, merchant and split info. */
@@ -57,7 +50,7 @@ export const transactionsRouter = {
           input,
         );
       } catch (error) {
-        throw toORPCError(error);
+        throw mapServiceError(error);
       }
     }),
 };

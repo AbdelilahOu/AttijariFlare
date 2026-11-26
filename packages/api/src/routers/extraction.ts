@@ -1,15 +1,7 @@
-import { ORPCError } from "@orpc/server";
-
-import { ReextractError, reextractStatement } from "../extraction/reextract";
+import { mapServiceError } from "../errors";
+import { reextractStatement } from "../extraction/reextract";
 import { protectedProcedure } from "../index";
 import { reextractStatementSchema } from "../schemas/extraction";
-
-function toORPCError(error: unknown): unknown {
-  if (error instanceof ReextractError) {
-    return new ORPCError(error.code, { message: error.message });
-  }
-  return error;
-}
 
 export const extractionRouter = {
   reextract: protectedProcedure
@@ -21,7 +13,7 @@ export const extractionRouter = {
           input.statementId,
         );
       } catch (error) {
-        throw toORPCError(error);
+        throw mapServiceError(error);
       }
     }),
 };

@@ -7,19 +7,12 @@ import {
 } from "@finance-ttijari/db/queries";
 
 import type { Bindings } from "../bindings";
+import { ServiceError } from "../errors";
 import { MERCHANT_DEFAULT_CONFIDENCE } from "./decide";
 import { syncMerchantVector } from "./enrich";
 
-/** Raised by `correctCategory`; `code` maps onto an HTTP status in the router. */
-export class CorrectCategoryError extends Error {
-  constructor(
-    readonly code: "NOT_FOUND" | "BAD_REQUEST",
-    message: string,
-  ) {
-    super(message);
-    this.name = "CorrectCategoryError";
-  }
-}
+/** Raised by `correctCategory`. */
+export class CorrectCategoryError extends ServiceError<"NOT_FOUND" | "BAD_REQUEST"> {}
 
 export type CorrectCategoryDeps = {
   db: Database;

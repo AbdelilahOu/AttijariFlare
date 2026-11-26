@@ -2,18 +2,11 @@ import type { Database } from "@finance-ttijari/db";
 import { getStatementForReextract, markStatementUploaded } from "@finance-ttijari/db/queries";
 
 import type { Bindings } from "../bindings";
+import { ServiceError } from "../errors";
 import { isExtractionStale } from "./stale";
 
-/** Raised by `reextractStatement`; `code` maps onto an HTTP status in the router. */
-export class ReextractError extends Error {
-  constructor(
-    readonly code: "NOT_FOUND" | "CONFLICT",
-    message: string,
-  ) {
-    super(message);
-    this.name = "ReextractError";
-  }
-}
+/** Raised by `reextractStatement`. */
+export class ReextractError extends ServiceError<"NOT_FOUND" | "CONFLICT"> {}
 
 export type ReextractDeps = {
   db: Database;

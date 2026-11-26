@@ -12,6 +12,7 @@ import type { Database } from "@finance-ttijari/db";
 import type { Statement } from "@finance-ttijari/db/schema/index";
 
 import type { Bindings } from "./bindings";
+import { ServiceError } from "./errors";
 
 /** Largest accepted statement PDF. Attijari monthly statements are well under 1 MB. */
 export const MAX_STATEMENT_BYTES = 10 * 1024 * 1024;
@@ -31,15 +32,12 @@ export type StatementDeps = {
   userId: string;
 };
 
+type StatementErrorCode = "BAD_REQUEST" | "PAYLOAD_TOO_LARGE" | "CONFLICT" | "NOT_FOUND";
+
 /** Error raised by the statement service; `code` maps onto an HTTP status. */
-export class StatementError extends Error {
-  constructor(
-    readonly code: "BAD_REQUEST" | "PAYLOAD_TOO_LARGE" | "CONFLICT" | "NOT_FOUND",
-    message: string,
-    readonly existingId?: string,
-  ) {
-    super(message);
-    this.name = "StatementError";
+export class StatementError extends ServiceError<StatementErrorCode> {
+  constructor(code: StatementErrorCode, message: string, readonly existingId?: string) {
+    super(code, message, existingId ? { existingId } : undefined);
   }
 }
 
