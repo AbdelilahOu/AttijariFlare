@@ -2,7 +2,7 @@ import { listTransactionMonths, listTransactions } from "@attijari-flare/db/quer
 
 import { correctCategory } from "../categorization/correct";
 import { mapServiceError } from "../errors";
-import { normalizeDescription } from "../extraction/fingerprint";
+import { normalizeDescription } from "../extraction/utils/fingerprint";
 import { protectedProcedure } from "../index";
 import { listTransactionsSchema, setTransactionCategorySchema } from "../schemas/transactions";
 

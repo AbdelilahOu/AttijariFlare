@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  buildClassifyMessages,
+  type ClassifyCategory,
+  mapClassification,
+  parseJsonResponse,
+} from "./prompts/prompt";
+import {
   decideFromNeighbours,
   merchantVectorMetadata,
   MIN_LLM_CONFIDENCE,
   toNeighbourMatch,
   VECTOR_MATCH_THRESHOLD,
-} from "./decide";
-import { merchantName } from "./merchant";
-import {
-  buildClassifyMessages,
-  type ClassifyCategory,
-  mapClassification,
-  parseJsonResponse,
-} from "./prompt";
+} from "./utils/decide";
+import { merchantName } from "./utils/merchant";
 
 // All fixtures are made up.
 

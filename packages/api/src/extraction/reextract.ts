@@ -3,7 +3,7 @@ import { getStatementForReextract, markStatementUploaded } from "@attijari-flare
 
 import type { Bindings } from "../bindings";
 import { ServiceError } from "../errors";
-import { isExtractionStale } from "./stale";
+import { isExtractionStale } from "./utils/stale";
 
 /** Raised by `reextractStatement`. */
 export class ReextractError extends ServiceError<"NOT_FOUND" | "CONFLICT"> {}

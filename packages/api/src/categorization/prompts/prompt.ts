@@ -1,8 +1,8 @@
 import type { CategoryKind, TransactionType } from "@attijari-flare/db/schema/enums";
 import { z } from "zod";
 
-import type { ChatMessage } from "../extraction/prompt";
-import { MIN_LLM_CONFIDENCE } from "./decide";
+import type { ChatMessage } from "../../extraction/prompts/prompt";
+import { MIN_LLM_CONFIDENCE } from "../utils/decide";
 
 /** Merchants per LLM call. A statement rarely has more; larger ones take a second call. */
 export const MAX_ITEMS_PER_CALL = 60;

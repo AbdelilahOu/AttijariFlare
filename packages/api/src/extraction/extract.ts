@@ -1,6 +1,6 @@
-import { chunkMarkdown, splitChunk } from "./chunk";
-import { buildChunkMessages, buildRetryMessage, type ChatMessage } from "./prompt";
+import { buildChunkMessages, buildRetryMessage, type ChatMessage } from "./prompts/prompt";
 import { type ChunkExtraction, chunkExtractionSchema, type ExtractedTransaction } from "./schema";
+import { chunkMarkdown, splitChunk } from "./utils/chunk";
 
 /**
  * Workers AI model used for extraction. It is on the JSON mode list

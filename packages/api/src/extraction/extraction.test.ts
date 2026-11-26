@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { chunkMarkdown, hasUsableText, splitChunk } from "./chunk";
 import {
   estimateNeurons,
   extractStatement,
@@ -8,12 +7,13 @@ import {
   mergeChunks,
   type RunModel,
 } from "./extract";
-import { fingerprintTransactions, normalizeDescription } from "./fingerprint";
-import { parseAmountToCentimes } from "./money";
-import { buildChunkMessages } from "./prompt";
+import { buildChunkMessages } from "./prompts/prompt";
 import { reconcile } from "./reconcile";
-import { isExtractionStale, STALE_EXTRACTION_MS } from "./stale";
 import { chunkExtractionSchema, type ExtractedTransaction, normalizeDate } from "./schema";
+import { chunkMarkdown, hasUsableText, splitChunk } from "./utils/chunk";
+import { fingerprintTransactions, normalizeDescription } from "./utils/fingerprint";
+import { parseAmountToCentimes } from "./utils/money";
+import { isExtractionStale, STALE_EXTRACTION_MS } from "./utils/stale";
 
 // All fixtures are made up.
 

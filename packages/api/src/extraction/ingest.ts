@@ -6,10 +6,10 @@ import type { BatchItem } from "drizzle-orm/batch";
 
 import type { Bindings } from "../bindings";
 import { statementOriginalKey, statementPrefix } from "../statements";
-import { hasUsableText } from "./chunk";
 import { extractStatement, ExtractionError, type RunModel } from "./extract";
-import { fingerprintTransactions, normalizeDescription } from "./fingerprint";
 import { reconcile } from "./reconcile";
+import { hasUsableText } from "./utils/chunk";
+import { fingerprintTransactions, normalizeDescription } from "./utils/fingerprint";
 import { createWorkersAiRunner } from "./workers-ai";
 
 /** A failure that retrying cannot fix: the consumer marks the statement failed and acks. */

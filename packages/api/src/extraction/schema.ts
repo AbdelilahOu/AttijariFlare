@@ -1,7 +1,7 @@
 import { transactionTypes } from "@attijari-flare/db/schema/enums";
 import { z } from "zod";
 
-import { parseAmountToCentimes } from "./money";
+import { parseAmountToCentimes } from "./utils/money";
 
 /**
  * Normalizes a date the model returned to ISO `YYYY-MM-DD`. The prompt asks for ISO, but

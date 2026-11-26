@@ -6,15 +6,7 @@ import type { BatchItem } from "drizzle-orm/batch";
 
 import type { Bindings } from "../bindings";
 import { estimateNeurons, type ModelUsage, type RunModel } from "../extraction/extract";
-import { normalizeDescription } from "../extraction/fingerprint";
-import {
-  decideFromNeighbours,
-  MERCHANT_DEFAULT_CONFIDENCE,
-  merchantVectorMetadata,
-  toNeighbourMatch,
-  VECTOR_TOP_K,
-} from "./decide";
-import { merchantName } from "./merchant";
+import { normalizeDescription } from "../extraction/utils/fingerprint";
 import {
   buildClassifyMessages,
   type ClassifyCategory,
@@ -22,7 +14,15 @@ import {
   mapClassification,
   MAX_ITEMS_PER_CALL,
   parseJsonResponse,
-} from "./prompt";
+} from "./prompts/prompt";
+import {
+  decideFromNeighbours,
+  MERCHANT_DEFAULT_CONFIDENCE,
+  merchantVectorMetadata,
+  toNeighbourMatch,
+  VECTOR_TOP_K,
+} from "./utils/decide";
+import { merchantName } from "./utils/merchant";
 import { createClassifyRunner, createWorkersAiEmbedder, type Embed } from "./workers-ai";
 
 /** A failure that retrying cannot fix: the consumer logs it and acks. */

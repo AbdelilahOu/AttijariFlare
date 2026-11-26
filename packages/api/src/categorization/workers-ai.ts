@@ -1,5 +1,5 @@
 import { EXTRACTION_MODEL, type RunModel } from "../extraction/extract";
-import { classifyResponseJsonSchema } from "./prompt";
+import { classifyResponseJsonSchema } from "./prompts/prompt";
 
 /** Embedding model for merchant names: multilingual (French, Arabic), 1024 dimensions. */
 export const EMBEDDING_MODEL = "@cf/baai/bge-m3";

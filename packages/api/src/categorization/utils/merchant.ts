@@ -1,4 +1,4 @@
-import { normalizeDescription } from "../extraction/fingerprint";
+import { normalizeDescription } from "../../extraction/utils/fingerprint";
 
 /** Longest merchant name kept, in words. Long tails are usually city names or references. */
 const MAX_MERCHANT_WORDS = 5;

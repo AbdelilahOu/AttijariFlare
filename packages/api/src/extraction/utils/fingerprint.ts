@@ -1,4 +1,4 @@
-import type { ExtractedTransaction } from "./schema";
+import type { ExtractedTransaction } from "../schema";
 
 /**
  * Normalizes a transaction label for comparison: Unicode compatibility form, Latin accents

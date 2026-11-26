@@ -8,7 +8,7 @@ import {
 
 import type { Bindings } from "../bindings";
 import { ServiceError } from "../errors";
-import { MERCHANT_DEFAULT_CONFIDENCE } from "./decide";
+import { MERCHANT_DEFAULT_CONFIDENCE } from "./utils/decide";
 import { syncMerchantVector } from "./enrich";
 
 /** Raised by `correctCategory`. */
