@@ -704,6 +704,15 @@ function SiteFooter() {
           <a class="hover:text-ink hover:underline" href="#faq-title">
             Questions
           </a>
+          <a
+            class="hover:text-ink hover:underline"
+            href="https://github.com/AbdelilahOu/AttijariFlare"
+            rel="noopener"
+            target="_blank"
+          >
+            Source code on GitHub
+            <span class="sr-only"> (opens in a new tab)</span>
+          </a>
           <span class="flex items-center gap-2 text-xs">
             <span
               class={[
