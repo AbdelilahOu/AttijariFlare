@@ -14,12 +14,6 @@ import Icon from "~/components/icon";
 import { formatMad, formatSignedMad } from "~/lib/format";
 import { useSession } from "~/lib/auth-client";
 
-/* Money */
-
-/**
- * A MAD amount in tabular figures. `signed` shows "+" on credits and colors them mint;
- * debits keep the ink color with a minus sign.
- */
 export function Money(props: {
   centimes: number;
   signed?: boolean;

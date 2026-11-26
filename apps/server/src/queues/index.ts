@@ -4,10 +4,6 @@ import type { CloudflareEnv } from "../../cloudflare-env";
 import { handleTxnEnrich } from "./enrich";
 import { handleStatementIngest } from "./ingest";
 
-/**
- * Routes a queue batch to its handler. Queue physical names include the stage and a
- * random suffix, so they are compared against the names Alchemy binds into env.
- */
 export async function queue(
   batch: MessageBatch<unknown>,
   env: CloudflareEnv,

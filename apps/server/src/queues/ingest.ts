@@ -6,17 +6,8 @@ import { eq } from "drizzle-orm";
 
 import type { CloudflareEnv } from "../../cloudflare-env";
 
-/**
- * Deliveries per message: the first one plus `maxRetries: 3` of the statement-ingest
- * consumer (packages/infra/alchemy.*.ts). After the last one the message goes to the DLQ.
- */
 const MAX_ATTEMPTS = 4;
 
-/**
- * Consumer for the `statement-ingest` queue: extracts one statement per message.
- * Transient errors are retried by the queue; the last attempt and permanent errors
- * (no text layer, missing statement) mark the statement failed.
- */
 export async function handleStatementIngest(
   batch: MessageBatch<StatementIngestMessage>,
   env: CloudflareEnv,

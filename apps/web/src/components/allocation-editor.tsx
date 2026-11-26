@@ -25,7 +25,6 @@ type Row = {
   note: string;
 };
 
-/** Centimes as an editable amount with a comma decimal ("1234,50"), matching the display. */
 const toInput = (centimes: number) => centimesToMad(centimes).replace(".", ",");
 
 let rowCounter = 0;
@@ -46,10 +45,6 @@ const toRows = (allocations: readonly SavedAllocation[]): Row[] =>
     }),
   );
 
-/**
- * Splits one debit transaction into parts (amount in MAD + category + note).
- * Loads its saved allocations and the user's categories, and saves through `allocations.set`.
- */
 export default function AllocationEditor(props: { transactionId: string; onSaved?: () => void }) {
   const state = useQuery(() =>
     orpc.allocations.list.queryOptions({ input: { transactionId: props.transactionId } }),

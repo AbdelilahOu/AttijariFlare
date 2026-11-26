@@ -4,17 +4,8 @@ import { createDb } from "@finance-ttijari/db";
 
 import type { CloudflareEnv } from "../../cloudflare-env";
 
-/**
- * Deliveries per message: the first one plus `maxRetries: 3` of the txn-enrich consumer
- * (packages/infra/alchemy.*.ts). After the last one the message goes to the DLQ.
- */
 const MAX_ATTEMPTS = 4;
 
-/**
- * Consumer for the `txn-enrich` queue: links the rows of one statement to merchants and
- * categorizes them. Transient errors are retried by the queue; a missing statement (deleted
- * meanwhile) is acked. Logs counts only, never descriptions or amounts.
- */
 export async function handleTxnEnrich(
   batch: MessageBatch<TxnEnrichMessage>,
   env: CloudflareEnv,

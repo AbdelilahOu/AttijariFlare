@@ -26,10 +26,6 @@ function compact(centimes: number): string {
   return `${Math.round(mad)}`;
 }
 
-/**
- * Paired bars per month: money in and money out side by side from one baseline, so small
- * months stay visible. Each month is a button; selected months are highlighted.
- */
 export function MonthlyChart(props: {
   points: readonly MonthPoint[];
   isSelected: (month: string) => boolean;
@@ -214,7 +210,6 @@ export type BarItem = {
   label: string;
   amount: number;
   color?: string | null;
-  /** Tailwind background class used when no color is given. */
   barClass?: string;
   href?: string;
   note?: string;
