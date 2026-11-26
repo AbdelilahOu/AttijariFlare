@@ -1,3 +1,4 @@
+import Seo from "~/components/seo";
 import { categoryKinds } from "@attijari-flare/api/enums";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import { Pencil, Plus, Tags, Trash } from "lucide";
@@ -34,13 +35,16 @@ const kindLabel = (kind: string) => kind.charAt(0).toUpperCase() + kind.slice(1)
 
 export default function Categories() {
   return (
-    <RequireSession>
-      <PageHeader
-        title="Categories"
-        description="Group spending the way you think about it. Subcategories roll up into their parent."
-      />
-      <CategoryManager />
-    </RequireSession>
+    <>
+      <Seo title="Categories - AttijariFlare" path="/categories" noindex />
+      <RequireSession>
+        <PageHeader
+          title="Categories"
+          description="Group spending the way you think about it. Subcategories roll up into their parent."
+        />
+        <CategoryManager />
+      </RequireSession>
+    </>
   );
 }
 

@@ -81,7 +81,7 @@ function PublicLayout(props: { children: Element }) {
             when={!session().isPending && session().data}
             fallback={
               <Show when={location.pathname !== "/login"}>
-                <a href="/login" class="btn-quiet">
+                <a href="/login?mode=signin" class="btn-quiet">
                   Sign in
                 </a>
               </Show>

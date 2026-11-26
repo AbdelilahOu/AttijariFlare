@@ -1,3 +1,10 @@
-# https://www.robotstxt.org/robotstxt.html
+# The landing page and sign-in are public; app pages need an account.
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /dashboard
+Disallow: /transactions
+Disallow: /upload
+Disallow: /withdrawals
+Disallow: /categories
+
+Sitemap: https://finance.ar7al.dev/sitemap.xml

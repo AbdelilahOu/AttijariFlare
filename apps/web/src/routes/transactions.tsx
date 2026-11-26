@@ -1,3 +1,4 @@
+import Seo from "~/components/seo";
 import { transactionTypes } from "@attijari-flare/api/enums";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/solid-query";
 import {
@@ -50,19 +51,22 @@ const typeLabel = (value: string) => {
 
 export default function Transactions() {
   return (
-    <RequireSession>
-      <PageHeader
-        title="Transactions"
-        description="Every line from your statements. Change a category and the app learns it for that merchant."
-        actions={
-          <a href="/categories" class="btn-quiet">
-            <Icon icon={Tags} size={18} />
-            Manage categories
-          </a>
-        }
-      />
-      <TransactionList />
-    </RequireSession>
+    <>
+      <Seo title="Transactions - AttijariFlare" path="/transactions" noindex />
+      <RequireSession>
+        <PageHeader
+          title="Transactions"
+          description="Every line from your statements. Change a category and the app learns it for that merchant."
+          actions={
+            <a href="/categories" class="btn-quiet">
+              <Icon icon={Tags} size={18} />
+              Manage categories
+            </a>
+          }
+        />
+        <TransactionList />
+      </RequireSession>
+    </>
   );
 }
 

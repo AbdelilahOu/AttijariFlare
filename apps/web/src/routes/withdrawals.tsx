@@ -1,3 +1,4 @@
+import Seo from "~/components/seo";
 import { useQuery } from "@tanstack/solid-query";
 import { Banknote, ChevronDown, CreditCard, Split } from "lucide";
 import { createSignal, For, Show } from "solid-js";
@@ -17,13 +18,16 @@ import { orpc } from "~/utils/orpc";
 
 export default function Withdrawals() {
   return (
-    <RequireSession>
-      <PageHeader
-        title="Split debits"
-        description="Say how a debit was spent. Cash withdrawals are listed first; any part left unallocated stays on the transaction's own category."
-      />
-      <DebitList />
-    </RequireSession>
+    <>
+      <Seo title="Split debits - AttijariFlare" path="/withdrawals" noindex />
+      <RequireSession>
+        <PageHeader
+          title="Split debits"
+          description="Say how a debit was spent. Cash withdrawals are listed first; any part left unallocated stays on the transaction's own category."
+        />
+        <DebitList />
+      </RequireSession>
+    </>
   );
 }
 

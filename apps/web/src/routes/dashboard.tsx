@@ -1,3 +1,4 @@
+import Seo from "~/components/seo";
 import { useQuery } from "@tanstack/solid-query";
 import type { IconNode } from "lucide";
 import {
@@ -31,9 +32,12 @@ import { orpc } from "~/utils/orpc";
 
 export default function Dashboard() {
   return (
-    <RequireSession>
-      <DashboardPage />
-    </RequireSession>
+    <>
+      <Seo title="Dashboard - AttijariFlare" path="/dashboard" noindex />
+      <RequireSession>
+        <DashboardPage />
+      </RequireSession>
+    </>
   );
 }
 
@@ -240,7 +244,7 @@ function MonthlyTable(props: {
   onSelect: (month: string) => void;
 }) {
   return (
-    <div class="-mx-4 mt-2 overflow-x-auto px-4 sm:-mx-5 sm:px-5">
+    <div class="relative -mx-4 mt-2 overflow-x-auto px-4 sm:-mx-5 sm:px-5">
       <table class="figures w-full min-w-[34rem] text-left text-sm">
         <caption class="sr-only">Monthly totals in MAD</caption>
         <thead class="text-ink-soft">
