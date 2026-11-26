@@ -54,7 +54,11 @@ export async function correctCategory(
   if (!category) throw new CorrectCategoryError("BAD_REQUEST", "Unknown category");
 
   if (!row.merchantId) {
-    await setTransactionCategoryByUser(db, { transactionId: row.id, categoryId: category.id });
+    await setTransactionCategoryByUser(db, {
+      userId,
+      transactionId: row.id,
+      categoryId: category.id,
+    });
     return { applied: 0, sameMerchantPending: 0, vectorSynced: false };
   }
 

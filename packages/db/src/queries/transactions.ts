@@ -141,12 +141,12 @@ export function notUserSetFilter() {
 /** Sets a transaction's category with source `user` (no merchant involved). */
 export async function setTransactionCategoryByUser(
   db: Database,
-  params: { transactionId: string; categoryId: string },
+  params: { userId: string; transactionId: string; categoryId: string },
 ) {
   await db
     .update(transactions)
     .set({ categoryId: params.categoryId, categorySource: "user", confidence: null })
-    .where(eq(transactions.id, params.transactionId));
+    .where(and(eq(transactions.id, params.transactionId), eq(transactions.userId, params.userId)));
 }
 
 export type CorrectionBatch = {
@@ -176,7 +176,9 @@ export async function applyCategoryCorrection(db: Database, params: CorrectionBa
     db
       .update(transactions)
       .set({ categoryId: params.categoryId, categorySource: "user", confidence: null })
-      .where(eq(transactions.id, params.transactionId)),
+      .where(
+        and(eq(transactions.id, params.transactionId), eq(transactions.userId, params.userId)),
+      ),
     db
       .update(merchants)
       .set({ defaultCategoryId: params.categoryId })
