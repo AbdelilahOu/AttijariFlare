@@ -174,3 +174,12 @@ attijari-flare/
 - `check` — format + lint + typecheck
 - `lint`, `format`, `staged` — Vite+ checks (apps also have their own scoped `lint`)
 - `hooks:setup` — install Vite+ native git hooks
+
+## Privacy and security
+
+Bank statements are personal financial data. [PRIVACY.md](PRIVACY.md) covers what is stored,
+where and for how long; [SECURITY.md](SECURITY.md) covers the security measures and how to report
+a vulnerability; [docs/privacy-audit.md](docs/privacy-audit.md) is the code audit behind both,
+and [docs/cndp-preparation.md](docs/cndp-preparation.md) gathers the facts for the CNDP
+declaration (loi 09-08). None of them is legal advice. Self-hosters: set `DO_NOT_TRACK=1` to stop
+the Alchemy CLI's telemetry; the app itself sends none.

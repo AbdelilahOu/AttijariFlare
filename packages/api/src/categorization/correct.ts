@@ -8,6 +8,7 @@ import {
 
 import type { Bindings } from "../bindings";
 import { ServiceError } from "../errors";
+import { logError } from "../log";
 import { MERCHANT_DEFAULT_CONFIDENCE } from "./utils/decide";
 import { syncMerchantVector } from "./enrich";
 
@@ -53,7 +54,11 @@ export async function correctCategory(
   if (!category) throw new CorrectCategoryError("BAD_REQUEST", "Unknown category");
 
   if (!row.merchantId) {
-    await setTransactionCategoryByUser(db, { transactionId: row.id, categoryId: category.id });
+    await setTransactionCategoryByUser(db, {
+      userId,
+      transactionId: row.id,
+      categoryId: category.id,
+    });
     return { applied: 0, sameMerchantPending: 0, vectorSynced: false };
   }
 
@@ -73,13 +78,9 @@ export async function correctCategory(
       await syncMerchantVector({ db, env: deps.env }, merchant);
       vectorSynced = true;
     } catch (error) {
-      console.error(
-        JSON.stringify({
-          event: "categorization.correctCategory.vector-error",
-          merchantId: row.merchantId,
-          error: error instanceof Error ? error.message : String(error),
-        }),
-      );
+      logError("categorization.correctCategory.vector-error", error, {
+        merchantId: row.merchantId,
+      });
     }
   }
 

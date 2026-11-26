@@ -10,10 +10,12 @@ import {
   Split,
   Sun,
   Tags,
+  UserX,
 } from "lucide";
 import { useLocation, useNavigate } from "@solidjs/router";
-import { createUniqueId, type Element, For, onSettled, Show } from "solid-js";
+import { createSignal, createUniqueId, type Element, For, onSettled, Show } from "solid-js";
 
+import DeleteAccountDialog from "~/components/delete-account-dialog";
 import Guilloche from "~/components/guilloche";
 import Icon from "~/components/icon";
 import { SignupPauseBanner } from "~/components/signup-pause";
@@ -30,7 +32,7 @@ const NAV: NavItem[] = [
   { href: "/categories", label: "Categories", short: "Categories", icon: Tags },
 ];
 
-const PUBLIC_PATHS = new Set(["/", "/login"]);
+const PUBLIC_PATHS = new Set(["/", "/login", "/privacy"]);
 
 export default function Shell(props: { children: Element }) {
   const location = useLocation();
@@ -250,6 +252,7 @@ function AccountMenu(props: { placement: "rail" | "bar" }) {
   const navigate = useNavigate();
   const session = useSession();
   const menuId = createUniqueId();
+  const [deleting, setDeleting] = createSignal(false);
   let menu: HTMLDivElement | undefined;
 
   const signOut = () => {
@@ -333,7 +336,26 @@ function AccountMenu(props: { placement: "rail" | "bar" }) {
           <Icon icon={LogOut} size={18} />
           Sign out
         </button>
+        <a
+          href="/privacy"
+          class="btn-ghost w-full justify-start"
+          onClick={() => menu?.hidePopover()}
+        >
+          Privacy
+        </a>
+        <button
+          type="button"
+          class="btn-ghost w-full justify-start hover:bg-garnet-tint hover:text-garnet"
+          onClick={() => {
+            menu?.hidePopover();
+            setDeleting(true);
+          }}
+        >
+          <Icon icon={UserX} size={18} />
+          Delete my account
+        </button>
       </div>
+      <DeleteAccountDialog open={deleting()} onClose={() => setDeleting(false)} />
     </>
   );
 }

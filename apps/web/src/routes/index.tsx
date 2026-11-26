@@ -189,7 +189,7 @@ const PRIVACY: { icon: IconNode; title: string; text: string }[] = [
   {
     icon: FileText,
     title: "Your statements stay yours",
-    text: "Delete a statement and its transactions and the stored PDF are deleted with it.",
+    text: "Delete a statement and its PDF, transactions and splits go with it. Delete your account and everything goes, PDFs included.",
   },
 ];
 
@@ -208,7 +208,7 @@ const FAQ: { question: string; answer: string }[] = [
   {
     question: "Is my data safe?",
     answer:
-      "You never share your bank login. Statements are processed by Cloudflare Workers AI and stored on Cloudflare, only your account can see them, and you can delete any statement with its transactions at any time.",
+      "You never share your bank login. Statements are processed by Cloudflare Workers AI and stored on Cloudflare, only your account can see them, and you can delete any statement, or your whole account, at any time. The privacy page lists what is stored, where and for how long.",
   },
   {
     question: "What if the AI gets something wrong?",
@@ -732,6 +732,9 @@ function SiteFooter() {
           </Show>
           <a class="hover:text-ink hover:underline" href="#faq-title">
             Questions
+          </a>
+          <a class="hover:text-ink hover:underline" href="/privacy">
+            Privacy
           </a>
           <a
             class="hover:text-ink hover:underline"

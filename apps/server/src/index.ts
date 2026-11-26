@@ -1,3 +1,4 @@
+import { logError } from "@attijari-flare/api/log";
 import { appRouter } from "@attijari-flare/api/routers/index";
 import {
   StatementError,
@@ -23,7 +24,9 @@ import { createAuth } from "./services";
 
 const app = new Hono();
 
-app.use(logger());
+// Request lines hold the method, path (ids only) and status. Hono prints the whole URL, so
+// the query string is cut: it can carry auth tokens (better-auth callbacks) or filters.
+app.use(logger((line) => console.log(line.replace(/\?\S*/, ""))));
 app.use(
   "/*",
   cors({
@@ -114,7 +117,8 @@ export const apiHandler = new OpenAPIHandler(appRouter, {
   ],
   interceptors: [
     onError((error) => {
-      console.error(error);
+      // Never the raw error: Drizzle errors list the bound values of the failed query.
+      logError("orpc.error", error);
     }),
   ],
 });
@@ -122,7 +126,8 @@ export const apiHandler = new OpenAPIHandler(appRouter, {
 export const rpcHandler = new RPCHandler(appRouter, {
   interceptors: [
     onError((error) => {
-      console.error(error);
+      // Never the raw error: Drizzle errors list the bound values of the failed query.
+      logError("orpc.error", error);
     }),
   ],
 });

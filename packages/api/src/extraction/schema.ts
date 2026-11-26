@@ -43,7 +43,7 @@ export function normalizeDate(value: string): string | null {
 const isoDate = z.string().transform((value, ctx) => {
   const normalized = normalizeDate(value);
   if (!normalized) {
-    ctx.addIssue({ code: "custom", message: `not a date: ${value}` });
+    ctx.addIssue({ code: "custom", message: "not a date in YYYY-MM-DD form" });
     return z.NEVER;
   }
   return normalized;
@@ -53,7 +53,7 @@ const isoDate = z.string().transform((value, ctx) => {
 const money = z.union([z.number(), z.string()]).transform((value, ctx) => {
   const centimes = parseAmountToCentimes(value);
   if (centimes === null) {
-    ctx.addIssue({ code: "custom", message: `not an amount: ${String(value)}` });
+    ctx.addIssue({ code: "custom", message: "not an amount in MAD" });
     return z.NEVER;
   }
   return centimes;

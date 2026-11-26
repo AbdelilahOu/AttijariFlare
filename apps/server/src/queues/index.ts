@@ -18,6 +18,6 @@ export async function queue(batch: MessageBatch<unknown>, env: CloudflareEnv): P
     return txnEnrichQueue(batch as MessageBatch<TxnEnrichMessage>, env);
   }
   // Unknown queue: retry so messages reach the dead-letter queue instead of being lost.
-  console.error(`queue: no consumer for queue "${batch.queue}"`);
+  console.error(JSON.stringify({ event: "queue.no-consumer", queue: batch.queue }));
   batch.retryAll();
 }

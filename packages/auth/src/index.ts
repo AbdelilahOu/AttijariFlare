@@ -35,10 +35,20 @@ export function isSignupsEnabled(value: AuthConfig["SIGNUPS_ENABLED"]): boolean 
   return ["true", "1", "yes", "on"].includes(value.trim().toLowerCase());
 }
 
+export type AuthHooks = {
+  /**
+   * Deletes everything the user owns outside the auth tables (R2, Vectorize, finance rows).
+   * Runs before better-auth deletes the user; a throw aborts the deletion so it can be
+   * retried, and nothing of the user is left half-deleted in the auth tables.
+   */
+  purgeUserData?: (userId: string) => Promise<void>;
+};
+
 export function createAuth(
   env: AuthConfig,
   database: Database,
   desktopOrigins: readonly string[] = [],
+  hooks: AuthHooks = {},
 ) {
   const singleUser = isSingleUserMode(env.SINGLE_USER);
   const signupsEnabled = isSignupsEnabled(env.SIGNUPS_ENABLED);
@@ -50,6 +60,23 @@ export function createAuth(
     }),
     trustedOrigins: [env.CORS_ORIGIN, ...desktopOrigins],
     emailAndPassword: { enabled: true, disableSignUp: !signupsEnabled },
+    // better-auth's telemetry is off unless enabled; pinned off so an env var cannot turn it on.
+    telemetry: { enabled: false },
+    user: {
+      // "Delete my account" (apps/web shell). The client sends the password, which
+      // better-auth verifies before calling beforeDelete; sessions are deleted with the user.
+      deleteUser: {
+        enabled: true,
+        beforeDelete: async (user) => {
+          if (!hooks.purgeUserData) {
+            throw new APIError("INTERNAL_SERVER_ERROR", {
+              message: "Account deletion is not configured on this server.",
+            });
+          }
+          await hooks.purgeUserData(user.id);
+        },
+      },
+    },
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     advanced: {
@@ -91,7 +118,13 @@ export function createAuth(
             try {
               await seedDefaultCategories(database, session.userId);
             } catch (error) {
-              console.error("Failed to seed default categories", error);
+              // Only the error kind: a Drizzle error message lists the query's bound values.
+              console.error(
+                JSON.stringify({
+                  event: "auth.seed-categories-error",
+                  error: error instanceof Error ? error.name : typeof error,
+                }),
+              );
             }
           },
         },

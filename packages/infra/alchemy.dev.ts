@@ -25,6 +25,13 @@ export const statementIngest = Cloudflare.Queues.Queue("statement-ingest");
 export const txnEnrichDlq = Cloudflare.Queues.Queue("txn-enrich-dlq");
 export const txnEnrich = Cloudflare.Queues.Queue("txn-enrich");
 
+// Workers Logs keep only the app's own console lines (redacted: ids, counts, error kinds).
+// Invocation logs are off: they record request metadata such as the client IP and location.
+const observability = {
+  enabled: true,
+  logs: { enabled: true, invocationLogs: false },
+};
+
 // Merchant embeddings from @cf/baai/bge-m3 (1024 dimensions).
 export const merchants = Cloudflare.Vectorize.Index("merchants", {
   dimensions: 1024,
@@ -37,6 +44,7 @@ export const server = Cloudflare.Worker("server", {
   compatibility: {
     flags: ["nodejs_compat"],
   },
+  observability,
   env: {
     DB: db,
     STATEMENTS: statements,
@@ -131,6 +139,7 @@ export default Alchemy.Stack(
       compatibility: {
         flags: ["nodejs_compat", "global_fetch_strictly_public"],
       },
+      observability,
       env: {
         VITE_SERVER_URL: serverWorker.url.as<string>(),
         // Shows the paused-sign-ups banner and hides sign-up calls to action when not "true".
