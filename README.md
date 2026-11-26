@@ -44,21 +44,6 @@ on `*_QUEUE_NAME` since Alchemy gives each queue a stage-suffixed physical name.
 consumer — inspect them in the dashboard. Routers get bindings via `context.env`; queue handlers
 via their `env` arg.
 
-### Free-tier limits
-
-Checked against Cloudflare docs on 2026-11-25; the app must stay inside these.
-
-| Product    | Free limit                                                                     |
-| ---------- | ------------------------------------------------------------------------------- |
-| Workers    | 100k req/day; 10ms CPU/request; 50 subrequests; 128MB memory                     |
-| Queues     | 10k ops/day; 24h retention; 128KB/message; 15min/consumer invocation            |
-| Workers AI | 10k neurons/day. `bge-m3`: 1,075 neurons/M input tokens. `toMarkdown` free for PDFs |
-| Vectorize  | 5M stored dims (~4,880 vectors @1024); 30M queried dims/month; 100 indexes       |
-| R2         | 10GB-month storage; 1M Class A + 10M Class B ops/month; free egress              |
-| D1         | 5M rows read/day; 100k written/day; 500MB/db, 5GB total; 10 databases            |
-
-Sources: [Workers](https://developers.cloudflare.com/workers/platform/limits/), [Queues](https://developers.cloudflare.com/queues/platform/limits/), [Workers AI](https://developers.cloudflare.com/workers-ai/platform/pricing/), [Vectorize](https://developers.cloudflare.com/vectorize/platform/limits/), [R2](https://developers.cloudflare.com/r2/pricing/), [D1](https://developers.cloudflare.com/d1/platform/limits/).
-
 ## Environment Configuration
 
 Each app has its own `.env.schema`; Varlock generates `src/env.ts` from it (`bun run env:generate`
