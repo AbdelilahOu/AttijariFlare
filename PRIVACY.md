@@ -32,7 +32,7 @@ statements. There is no advertising, profiling, credit scoring, resale or sharin
 | Categories, corrections, splits and their notes                                    | Reports                                       | D1                                  |
 | When the privacy notice was accepted, and which version                            | Upload consent                                | D1 `user`                           |
 | Temporary extraction files: the PDF's text and the model's answer                  | Debugging a statement that did not reconcile  | R2, see "Retention"                 |
-| Rate-limit counters: your IP or user id with the path, and a count                 | Stop password guessing and upload abuse       | Cloudflare rate limiter, one minute |
+| Rate-limit counters: your IP or user id, and a count                               | Stop password guessing and upload abuse       | Cloudflare rate limiter, one minute |
 
 The full field-by-field inventory is in `docs/privacy-audit.md`.
 

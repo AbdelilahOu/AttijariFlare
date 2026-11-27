@@ -8,7 +8,7 @@ import {
   getStatementPdf,
   statementErrorStatus,
 } from "@attijari-flare/api/statements";
-import { UPLOAD_LIMIT, consumeBinding } from "@attijari-flare/auth/rate-limit";
+import { authLimiterFor } from "@attijari-flare/auth/rate-limit";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError } from "@orpc/server";
@@ -47,6 +47,20 @@ app.use(
   }),
 );
 
+const tooManyRequests = (c: HonoContext, message: string) => {
+  c.header("Retry-After", "60");
+  return c.json({ code: "RATE_LIMITED", message }, 429);
+};
+
+app.post("/api/auth/*", async (c, next) => {
+  const limiter = authLimiterFor(c.req.path.slice("/api/auth".length), ENV);
+  if (limiter) {
+    const { success } = await limiter.limit({ key: c.req.header("cf-connecting-ip") ?? "unknown" });
+    if (!success) return tooManyRequests(c, "Too many attempts, try again in a minute.");
+  }
+  await next();
+});
+
 app.on(["POST", "GET"], "/api/auth/*", async (c) => (await createAuth()).handler(c.req.raw));
 
 // Statement upload and "view source" live on plain Hono routes: the browser sends the upload
@@ -72,14 +86,8 @@ app.post("/api/statements", async (c) => {
   const deps = await statementDeps(c);
   if (!deps) return c.json({ code: "UNAUTHORIZED", message: "Sign in first." }, 401);
 
-  const limit = await consumeBinding(ENV.UPLOAD_LIMIT, `upload|${deps.userId}`, UPLOAD_LIMIT);
-  if (!limit.allowed) {
-    c.header("Retry-After", String(limit.retryAfter));
-    return c.json(
-      { code: "RATE_LIMITED", message: "Too many uploads. Try again in a minute." },
-      429,
-    );
-  }
+  const { success } = await ENV.UPLOAD_LIMIT.limit({ key: deps.userId });
+  if (!success) return tooManyRequests(c, "Too many uploads. Try again in a minute.");
 
   const declaredLength = Number(c.req.header("content-length") ?? 0);
   if (declaredLength > MAX_STATEMENT_BYTES + 64 * 1024) {

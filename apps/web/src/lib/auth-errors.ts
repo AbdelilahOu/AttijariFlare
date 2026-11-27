@@ -1,4 +1,4 @@
-/** Shown when better-auth answers 429 (packages/auth/src/rate-limit.ts). */
+/** Shown when the API answers 429 (rate limit, apps/server/src/index.ts). */
 export const TOO_MANY_ATTEMPTS = "Too many attempts, try again in a minute.";
 
 /** A user-facing message for a better-auth client error. */

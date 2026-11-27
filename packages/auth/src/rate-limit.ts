@@ -1,29 +1,13 @@
-export type RateLimitRule = {
-  window: number;
-  max: number;
-};
-
-export type RateLimitDecision =
-  | { allowed: true; retryAfter: null }
-  | { allowed: false; retryAfter: number };
-
-export type RateLimitBinding = {
+export type RateLimiter = {
   limit(options: { key: string }): Promise<{ success: boolean }>;
 };
 
-export type AuthRateLimitBindings = {
-  signIn: RateLimitBinding;
-  sensitive: RateLimitBinding;
+export type AuthRateLimiters = {
+  AUTH_SIGN_IN_LIMIT: RateLimiter;
+  AUTH_SENSITIVE_LIMIT: RateLimiter;
 };
 
-// Must match the `simple` config of the bindings in packages/infra/alchemy.*.ts.
-export const SIGN_IN_LIMIT: RateLimitRule = { window: 60, max: 5 };
-export const SENSITIVE_LIMIT: RateLimitRule = { window: 60, max: 3 };
-export const UPLOAD_LIMIT: RateLimitRule = { window: 60, max: 3 };
-
-export const SIGN_IN_PATH = "/sign-in/email";
-
-export const SENSITIVE_AUTH_PATHS = [
+const SENSITIVE_AUTH_PATHS = new Set([
   "/sign-up/email",
   "/delete-user",
   "/change-password",
@@ -32,44 +16,11 @@ export const SENSITIVE_AUTH_PATHS = [
   "/forget-password",
   "/reset-password",
   "/send-verification-email",
-] as const;
+]);
 
-export const AUTH_RATE_LIMIT_RULES: Record<string, RateLimitRule | false> = {
-  [SIGN_IN_PATH]: SIGN_IN_LIMIT,
-  ...Object.fromEntries(SENSITIVE_AUTH_PATHS.map((path) => [path, SENSITIVE_LIMIT])),
-  "/**": false,
-};
-
-export async function consumeBinding(
-  binding: RateLimitBinding,
-  key: string,
-  rule: RateLimitRule,
-): Promise<RateLimitDecision> {
-  try {
-    const { success } = await binding.limit({ key });
-    return success
-      ? { allowed: true, retryAfter: null }
-      : { allowed: false, retryAfter: rule.window };
-  } catch (error) {
-    console.error(
-      JSON.stringify({
-        event: "rate-limit.error",
-        error: error instanceof Error ? error.name : typeof error,
-      }),
-    );
-    return { allowed: true, retryAfter: null };
-  }
-}
-
-export function pathOfKey(key: string): string {
-  return key.slice(key.lastIndexOf("|") + 1);
-}
-
-export function createAuthRateLimitStorage(bindings: AuthRateLimitBindings) {
-  return {
-    consume(key: string, rule: RateLimitRule) {
-      const binding = pathOfKey(key) === SIGN_IN_PATH ? bindings.signIn : bindings.sensitive;
-      return consumeBinding(binding, key, rule);
-    },
-  };
+/** The limiter for a better-auth path (without the `/api/auth` prefix), or none. */
+export function authLimiterFor(path: string, env: AuthRateLimiters): RateLimiter | undefined {
+  if (path === "/sign-in/email") return env.AUTH_SIGN_IN_LIMIT;
+  if (SENSITIVE_AUTH_PATHS.has(path)) return env.AUTH_SENSITIVE_LIMIT;
+  return undefined;
 }
