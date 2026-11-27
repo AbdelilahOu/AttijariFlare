@@ -3,15 +3,17 @@ import * as Alchemy from "alchemy";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 
+// Legacy WNAM resources, no longer bound (issue #30). Declared only so Alchemy keeps them until the owner approves deletion.
 export const db = Cloudflare.D1.Database("database", {
   migrations: "../../packages/db/src/migrations",
 });
 
 export const statements = Cloudflare.R2.Bucket("statements");
 
-// EU copies of the WNAM resources above (issue #30). The legacy ones stay until the owner approves their deletion.
-// Filled with a full export of the WNAM database (schema, data, migration ledger); migrations are added at the switch.
-export const dbEu = Cloudflare.D1.Database("database-eu", { jurisdiction: "eu" });
+export const dbEu = Cloudflare.D1.Database("database-eu", {
+  jurisdiction: "eu",
+  migrations: "../../packages/db/src/migrations",
+});
 
 export const statementsEu = Cloudflare.R2.Bucket("statements-eu", { jurisdiction: "eu" });
 
@@ -76,8 +78,8 @@ export default Alchemy.Stack(
       observability,
       domain: { name: apiHost, zoneName: "ar7al.dev" },
       env: {
-        DB: db,
-        STATEMENTS: statements,
+        DB: dbEu,
+        STATEMENTS: statementsEu,
         AUTH_SIGN_IN_LIMIT: Cloudflare.RateLimit("AUTH_SIGN_IN_LIMIT", {
           namespaceId: rateLimitNamespace(1),
           simple: { limit: 5, period: 60 },
@@ -90,10 +92,10 @@ export default Alchemy.Stack(
           namespaceId: rateLimitNamespace(3),
           simple: { limit: 3, period: 60 },
         }),
-        STATEMENT_INGEST: statementIngest,
-        TXN_ENRICH: txnEnrich,
-        STATEMENT_INGEST_QUEUE_NAME: statementIngest.pipe(Effect.map((queue) => queue.queueName)),
-        TXN_ENRICH_QUEUE_NAME: txnEnrich.pipe(Effect.map((queue) => queue.queueName)),
+        STATEMENT_INGEST: statementIngestEu,
+        TXN_ENRICH: txnEnrichEu,
+        STATEMENT_INGEST_QUEUE_NAME: statementIngestEu.pipe(Effect.map((queue) => queue.queueName)),
+        TXN_ENRICH_QUEUE_NAME: txnEnrichEu.pipe(Effect.map((queue) => queue.queueName)),
         VECTORIZE: merchants,
         AI: Cloudflare.Workers.AI(),
         CORS_ORIGIN: Config.succeed(`https://${webHost}`),
@@ -106,18 +108,18 @@ export default Alchemy.Stack(
         port: 3000,
       },
     });
-    const ingestQueue = yield* statementIngest;
-    const ingestDlq = yield* statementIngestDlq;
-    const enrichQueue = yield* txnEnrich;
-    const enrichDlq = yield* txnEnrichDlq;
+    const ingestQueue = yield* statementIngestEu;
+    const ingestDlq = yield* statementIngestDlqEu;
+    const enrichQueue = yield* txnEnrichEu;
+    const enrichDlq = yield* txnEnrichDlqEu;
     const merchantIndex = yield* merchants;
 
-    yield* dbEu;
-    yield* statementsEu;
-    yield* statementIngestDlqEu;
-    yield* statementIngestEu;
-    yield* txnEnrichDlqEu;
-    yield* txnEnrichEu;
+    yield* db;
+    yield* statements;
+    yield* statementIngestDlq;
+    yield* statementIngest;
+    yield* txnEnrichDlq;
+    yield* txnEnrich;
 
     yield* Cloudflare.Vectorize.MetadataIndex("merchants-user-id", {
       indexName: merchantIndex.indexName,

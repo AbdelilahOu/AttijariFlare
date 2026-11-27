@@ -225,4 +225,4 @@ Still open:
 - Optional automatic PDF expiry (lifecycle rule or scheduled job).
 - Strip the holder's name and address from the extraction context where the layout allows.
 - Email verification before upload, so an account is tied to a real address.
-- Move D1 and R2 to the EU jurisdiction if the CNDP prefers it (see `docs/cndp-preparation.md`).
+- Done in #30: D1, R2 and the queues are in the EU jurisdiction (see `docs/cndp-preparation.md`).

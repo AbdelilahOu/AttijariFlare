@@ -49,6 +49,9 @@ not access other users' data to prove a finding: a test account of your own is e
   the app.
 - Each stage (local dev, each pull request preview, prod) has its own D1, R2, queues and
   Vectorize index, so previews never touch production data.
+- D1, R2 and every queue are in the `eu` jurisdiction in every stage, so their data is stored
+  only in the EU. Vectorize, Workers AI and the Workers have no jurisdiction option (see
+  `PRIVACY.md`).
 - Encryption at rest and in transit inside Cloudflare is Cloudflare's; the app adds none.
 
 ### Transport

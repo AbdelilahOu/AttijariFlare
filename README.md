@@ -30,14 +30,20 @@ on deploy.
 
 Provisioned entirely by `packages/infra/alchemy.*.ts` — don't create resources via wrangler or the dashboard.
 
-| Binding            | Resource                              | Used for                           |
-| ------------------ | ------------------------------------- | ---------------------------------- |
-| `DB`               | D1 database                           | All application data               |
-| `STATEMENTS`       | R2 bucket `statements`                | Original PDFs, extraction output   |
-| `STATEMENT_INGEST` | Queue (+ DLQ)                         | Upload → AI extraction             |
-| `TXN_ENRICH`       | Queue (+ DLQ)                         | Extraction → categorization        |
-| `VECTORIZE`        | Index `merchants` (1024 dims, cosine) | Merchant embeddings (`bge-m3`)     |
-| `AI`               | Workers AI                            | toMarkdown, extraction, embeddings |
+| Binding            | Resource                              | Jurisdiction | Used for                           |
+| ------------------ | ------------------------------------- | ------------ | ---------------------------------- |
+| `DB`               | D1 database                           | `eu`         | All application data               |
+| `STATEMENTS`       | R2 bucket `statements`                | `eu`         | Original PDFs, extraction output   |
+| `STATEMENT_INGEST` | Queue (+ DLQ)                         | `eu`         | Upload → AI extraction             |
+| `TXN_ENRICH`       | Queue (+ DLQ)                         | `eu`         | Extraction → categorization        |
+| `VECTORIZE`        | Index `merchants` (1024 dims, cosine) | none offered | Merchant embeddings (`bge-m3`)     |
+| `AI`               | Workers AI                            | none offered | toMarkdown, extraction, embeddings |
+
+Every new resource must use `jurisdiction: "eu"` wherever Cloudflare offers one, in all three
+entry files. Vectorize, Workers AI, the rate-limit bindings and the Workers themselves have no
+jurisdiction option, so they run wherever Cloudflare places them. Changing `jurisdiction` on an
+existing resource makes Alchemy replace it (delete, then create), which loses its data: create
+the EU resource next to the old one, copy the data, then switch the binding.
 
 The server worker consumes both queues (batch 1, concurrency 1, 3 retries, then DLQ), dispatching
 on `*_QUEUE_NAME` since Alchemy gives each queue a stage-suffixed physical name. DLQs have no
@@ -127,6 +133,9 @@ Sign-ups on the hosted instance are paused, so the way to use AttijariFlare toda
 2. Use a Cloudflare account on the free tier (Workers, D1, R2, Queues, Vectorize and Workers AI
    all fit it for personal use) with a zone for your domain. Replace `ar7al.dev` and the
    `finance*` hostnames in `packages/infra/alchemy.prod.ts` (and `alchemy.preview.ts`) with yours.
+   D1, R2 and the queues are created in Cloudflare's EU jurisdiction by default, so stored data
+   stays in the EU (useful for GDPR and for a CNDP transfer declaration). Choose before the first
+   deploy: the jurisdiction cannot be changed later without migrating the data.
 3. Connect Alchemy: locally run `packages/infra/node_modules/.bin/alchemy profile edit`; for CI
    create an API token with the permissions listed under [Secrets](#secrets).
 4. Add the GitHub secrets from [Secrets](#secrets) to your fork: `CLOUDFLARE_API_TOKEN`,
