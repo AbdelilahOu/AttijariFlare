@@ -98,8 +98,8 @@ const BLOCKS: Block[] = [
         browser, device type and country, to Cloudflare. Cloudflare states that it sets no cookies,
         stores nothing in your browser and does not fingerprint visitors. It never sees your
         statements or transactions: those are only shown to you after you sign in, and the script
-        measures page loads, not page content. The figures are only used to see how fast the site
-        is and which pages are visited.
+        measures page loads, not page content. The figures are only used to see how fast the site is
+        and which pages are visited.
       </p>
     ),
   },
