@@ -5,7 +5,7 @@
 > under Moroccan loi 09-08 or any other law. The public notice users accept is the `/privacy`
 > page (`apps/web/src/routes/privacy.tsx`); keep the two in step.
 
-Version: 2026-11-26 (`PRIVACY_POLICY_VERSION` in `packages/api/src/privacy.ts`).
+Version: 2026-11-27.2 (`PRIVACY_POLICY_VERSION` in `packages/api/src/privacy.ts`).
 
 ## Who is responsible
 
@@ -58,10 +58,22 @@ receives it from appear in transfer descriptions and become merchant names.
 All processing runs on Cloudflare, acting as processor: Workers, D1, R2, Queues, Vectorize,
 Workers Rate Limiting (counters only) and Workers AI.
 
-- Prod D1 database: region WNAM (western North America), no jurisdiction, read replication
-  disabled (checked with `cf d1 get` on 2026-11-26).
-- Prod R2 bucket: location WNAM, default jurisdiction (checked with `cf r2 buckets get`).
-- Vectorize: Cloudflare documents no location or jurisdiction option.
+Every resource that supports a Cloudflare jurisdiction uses `eu` in every deployed stage
+(previews and prod; local dev declares it too but runs on the developer's machine). Data in an
+EU-jurisdiction resource is stored only in the European Union.
+
+- Prod D1 database: jurisdiction `eu`, read replication disabled.
+- Prod R2 bucket: jurisdiction `eu`.
+- Prod Queues (statement ingest, transaction enrichment, and their dead-letter queues):
+  jurisdiction `eu`.
+- These were checked with `cf d1 list`, `cf r2 buckets list --cf-r2-jurisdiction eu` and
+  `cf queues list` on 2026-11-27. Until 2026-11-27 the prod D1 database and R2 bucket were in
+  WNAM (western North America); they were copied to the EU resources then.
+- Vectorize: Cloudflare documents no location or jurisdiction option, so the merchant
+  embeddings are stored wherever Cloudflare places the index.
+- Workers (the code) and Workers Rate Limiting counters: no jurisdiction option. Requests run
+  in the Cloudflare data center that receives them. Cloudflare's Regional Services, which can
+  restrict this, is an Enterprise-only add-on.
 - Workers AI: Cloudflare's data usage page says it does not use customer content processed by
   Workers AI to train models and does not retain inputs or outputs once they are no longer
   needed for the request: https://developers.cloudflare.com/workers-ai/platform/data-usage/.
@@ -69,7 +81,8 @@ Workers Rate Limiting (counters only) and Workers AI.
   for Workers AI: https://www.cloudflare.com/gdpr/subprocessors/cloudflare-services/.
 - Workers Logs: stored by Cloudflare, possibly in its core data centers globally.
 
-The data is therefore stored and processed outside Morocco.
+The stored data (D1, R2, Queues) is therefore in the EU, outside Morocco. Merchant embeddings
+(Vectorize), Workers AI inference and request handling can happen outside the EU.
 
 Cloudflare's customer DPA is at https://www.cloudflare.com/cloudflare-customer-dpa/. Whether it
 applies to a Free plan self-serve account depends on the Self-Serve Subscription Agreement
@@ -126,5 +139,6 @@ There are no other backups.
 - The Alchemy CLI sends its own telemetry unless `ALCHEMY_TELEMETRY_DISABLED=1` (or
   `DO_NOT_TRACK=1`) is set; the GitHub workflows set it, and self-hosters should set it locally.
 - Whoever deploys an instance is the controller for its data and must make their own
-  declarations, choose their own Cloudflare data location (D1 and R2 jurisdictions can only be
-  set at creation) and publish their own contact.
+  declarations and publish their own contact. The stack creates D1, R2 and every queue in the
+  `eu` jurisdiction by default. A jurisdiction can only be set at creation: changing it in
+  Alchemy replaces the resource (delete then create), so migrate the data first.

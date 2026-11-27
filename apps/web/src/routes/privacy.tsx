@@ -5,7 +5,7 @@ import Seo from "~/components/seo";
 // The public privacy notice. Keep it in step with PRIVACY.md (the long form) and bump
 // PRIVACY_POLICY_VERSION in packages/api/src/privacy.ts when a change needs new consent:
 // uploads are refused until the user accepts the current version.
-const PRIVACY_VERSION = "2026-11-27";
+const PRIVACY_VERSION = "2026-11-27.2";
 
 /** Privacy contact of the operator. Empty until the operator publishes one. */
 const PRIVACY_CONTACT = "contact@ar7al.dev";
@@ -81,11 +81,13 @@ const BLOCKS: Block[] = [
     title: "Where",
     body: (
       <p>
-        Everything runs on Cloudflare, which acts as processor. The database and the PDF storage of
-        this site were created in Cloudflare's Western North America region (no EU jurisdiction was
-        chosen), so your data is stored outside Morocco. Cloudflare states that it does not use
-        content processed by Workers AI to train models and does not keep inputs or outputs after
-        the request. Cloudflare lists its own subprocessors for Workers AI.
+        Everything runs on Cloudflare, which acts as processor. The database, the PDF storage and
+        the processing queues of this site are in Cloudflare's EU jurisdiction, so they are stored
+        only in the European Union, which is outside Morocco. Cloudflare offers no such option for
+        the merchant embeddings (Vectorize), for Workers AI or for the code itself (Workers): these
+        run wherever Cloudflare places them, which can be outside the EU. Cloudflare states that it
+        does not use content processed by Workers AI to train models and does not keep inputs or
+        outputs after the request. Cloudflare lists its own subprocessors for Workers AI.
       </p>
     ),
   },

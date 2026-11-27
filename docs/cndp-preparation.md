@@ -23,7 +23,7 @@
 | F-211 | Normal declaration (déclaration normale) of a processing                                                 | Likely, if the processing only needs a declaration. A natural person can be the controller on it: **to confirm with the CNDP**                                                                                                                                                  |
 | F-214 | Simplified declaration, only for processing covered by a CNDP decision (délibération) setting a standard | Only if a CNDP decision covers personal finance tracking. None is known: **to confirm with the CNDP**                                                                                                                                                                           |
 | F-112 | Request for prior authorization (demande d'autorisation préalable)                                       | If the CNDP considers this processing needs authorization rather than declaration (loi 09-08, article 12 and following). Financial data of individuals, data about third parties (transfer counterparties) and storage abroad may weigh toward it: **to confirm with the CNDP** |
-| F-118 | Request for authorization to transfer data abroad                                                        | Likely needed: the data is stored and processed outside Morocco (see "Data location"). **To confirm with the CNDP** whether the destination is considered to offer adequate protection, and whether a transfer authorization is still required                                  |
+| F-118 | Request for authorization to transfer data abroad                                                        | Likely needed: the data is stored in the EU and partly processed elsewhere (see "Data location"). **To confirm with the CNDP** whether the destination is considered to offer adequate protection, and whether a transfer authorization is still required                       |
 
 Order of submission (from the review, **to confirm with the CNDP**): file the main processing
 first (F-211, or F-112 if authorization is required) and obtain its receipt or approval; then
@@ -112,37 +112,35 @@ telemetry; production deploys only from CI; secrets outside the repository.
 
 ## Data location and transfer abroad
 
-Read from the account with the `cf` CLI on 2026-11-26:
+Read from the account with the `cf` CLI on 2026-11-27, after the move to the EU jurisdiction
+(#30):
 
-| Resource             | Location                                          | Jurisdiction | Notes                                                                                                                                                                             |
-| -------------------- | ------------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Prod D1 database     | `running_in_region: WNAM` (western North America) | none         | Read replication disabled. Created without a location hint, so Cloudflare placed it near the creating request (https://developers.cloudflare.com/d1/configuration/data-location/) |
-| Prod R2 bucket       | `location: WNAM`                                  | `default`    | Created without a hint (https://developers.cloudflare.com/r2/reference/data-location/)                                                                                            |
-| Prod Vectorize index | Not exposed                                       | -            | Cloudflare documents no location option for Vectorize                                                                                                                             |
-| Workers AI           | Not documented per request                        | -            | Data usage page: https://developers.cloudflare.com/workers-ai/platform/data-usage/ ; subprocessors in the United States and England                                               |
-| Workers (compute)    | Cloudflare's network, near the user               | -            | Requests are handled in a Cloudflare data center close to the visitor                                                                                                             |
-| Workers Logs         | Cloudflare core data centers, globally            | -            | https://developers.cloudflare.com/workers/observability/logs/workers-logs/                                                                                                        |
+| Resource                         | Location                               | Jurisdiction | Notes                                                                                                                                                                           |
+| -------------------------------- | -------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Prod D1 database                 | EU                                     | `eu`         | Data stored only in the EU (https://developers.cloudflare.com/d1/configuration/data-location/). Read replication disabled                                                       |
+| Prod R2 bucket                   | EU                                     | `eu`         | Data stored only in the EU (https://developers.cloudflare.com/r2/reference/data-location/)                                                                                      |
+| Prod Queues (2 queues, 2 DLQs)   | EU                                     | `eu`         | Messages carry ids only (statement and transaction ids), no statement content                                                                                                   |
+| Prod Vectorize index             | Not exposed                            | -            | Cloudflare documents no location or jurisdiction option for Vectorize. Holds merchant-name embeddings with `user_id` metadata                                                   |
+| Workers AI                       | Not documented per request             | -            | No option to restrict where inference runs. Data usage page: https://developers.cloudflare.com/workers-ai/platform/data-usage/ ; subprocessors in the United States and England |
+| Workers (compute), rate limiting | Cloudflare's network, near the user    | -            | No jurisdiction option. Regional Services (Data Localization Suite) can restrict processing but is an Enterprise-only add-on                                                    |
+| Workers Logs                     | Cloudflare core data centers, globally | -            | https://developers.cloudflare.com/workers/observability/logs/workers-logs/ . Invocation logs are off                                                                            |
 
-So the data is stored in the United States and processed in the United States, possibly England
-(Workers AI subprocessors) and wherever the Worker runs. This is a transfer outside Morocco.
+Until 2026-11-27 the prod D1 database and R2 bucket were in WNAM (western North America). They
+were copied to new EU resources (row counts and every object checked) and the Worker switched to
+them; the WNAM resources are deleted once the owner confirms.
 
-Neither D1 nor R2 offers a Morocco location. Both offer an `eu` jurisdiction (data stored only in
-the EU). A jurisdiction can only be set when the database or bucket is created; it cannot be
-changed afterwards. Cloudflare's pages do not say whether jurisdictions are available on the
-Free plan.
+So the stored data (database, PDFs, queues) is in the EU. Merchant embeddings (Vectorize),
+Workers AI inference (subprocessors in the United States and England), request handling and
+logs can be outside the EU. Both cases are a transfer outside Morocco. No Cloudflare product
+offers a Morocco location.
 
-### Possible follow-up: move D1 and R2 to the EU
+### F-118
 
-If the CNDP treats EU storage more favourably than US storage (**to confirm with the CNDP**):
-
-1. Create a new D1 database with `jurisdiction: "eu"` and a new R2 bucket with
-   `jurisdiction: "eu"` (Alchemy supports both props in `packages/infra/alchemy.prod.ts`).
-2. Export the D1 data and import it into the new database; copy every R2 object.
-3. Switch the Worker bindings, then delete the old database and bucket.
-
-This is possible without data loss, but it is a production migration and is not done in this
-change. Vectorize, Workers AI and Workers Logs would still not be EU-only, so a transfer
-declaration would likely still be needed.
+F-118 is still likely needed: storage in the EU is a transfer abroad. The request should name
+the EU as the storage location for the database, the PDFs and the queues, and say honestly that
+Vectorize, Workers AI, Workers and Workers Logs run where Cloudflare places them, which may be
+outside the EU (including the United States). **To confirm with the CNDP** whether the EU is
+considered to offer adequate protection, and whether that changes what F-118 must contain.
 
 ## Cloudflare DPA and subprocessors
 
@@ -162,5 +160,5 @@ declaration would likely still be needed.
 - [ ] Confirm the order: main processing first, then the transfer.
 - [ ] Publish a privacy contact on `/privacy`, in `PRIVACY.md` and `SECURITY.md`.
 - [ ] Review and, if offered, accept Cloudflare's DPA; review the subprocessor list.
-- [ ] Decide whether to move D1 and R2 to the EU jurisdiction before filing the transfer.
+- [x] Move D1, R2 and the queues to the EU jurisdiction (#30).
 - [ ] After the receipt, show its number on `/privacy` and only then reopen sign-ups.
