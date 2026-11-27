@@ -68,7 +68,8 @@ EU-jurisdiction resource is stored only in the European Union.
   jurisdiction `eu`.
 - These were checked with `cf d1 list`, `cf r2 buckets list --cf-r2-jurisdiction eu` and
   `cf queues list` on 2026-11-27. Until 2026-11-27 the prod D1 database and R2 bucket were in
-  WNAM (western North America); they were copied to the EU resources then.
+  WNAM (western North America); they were copied to the EU
+  resources then, and the WNAM database, bucket and queues were deleted.
 - Vectorize: Cloudflare documents no location or jurisdiction option, so the merchant
   embeddings are stored wherever Cloudflare places the index.
 - Workers (the code) and Workers Rate Limiting counters: no jurisdiction option. Requests run

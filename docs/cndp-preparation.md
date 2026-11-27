@@ -127,7 +127,7 @@ Read from the account with the `cf` CLI on 2026-11-27, after the move to the EU 
 
 Until 2026-11-27 the prod D1 database and R2 bucket were in WNAM (western North America). They
 were copied to new EU resources (row counts and every object checked) and the Worker switched to
-them; the WNAM resources are deleted once the owner confirms.
+them. The WNAM database, bucket and queues were then deleted with the owner's approval.
 
 So the stored data (database, PDFs, queues) is in the EU. Merchant embeddings (Vectorize),
 Workers AI inference (subprocessors in the United States and England), request handling and
