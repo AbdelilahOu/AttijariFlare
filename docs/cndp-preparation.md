@@ -36,7 +36,7 @@ Sign-ups on the hosted instance stay paused (#24) until the CNDP has answered.
 ### Controller (responsable du traitement)
 
 - A natural person (personne physique) based in Morocco, operating https://finance.ar7al.dev as a
-  personal, free project. Fill in name, address, contact.
+  personal, free project. Fill in abdelilah ouaadouch, tinghir, contact@ar7al.dev.
 - No representative, no joint controller.
 
 ### Name and purpose of the processing
