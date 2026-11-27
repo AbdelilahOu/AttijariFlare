@@ -5,7 +5,7 @@ import Seo from "~/components/seo";
 // The public privacy notice. Keep it in step with PRIVACY.md (the long form) and bump
 // PRIVACY_POLICY_VERSION in packages/api/src/privacy.ts when a change needs new consent:
 // uploads are refused until the user accepts the current version.
-const PRIVACY_VERSION = "2026-11-26";
+const PRIVACY_VERSION = "2026-11-27";
 
 /** Privacy contact of the operator. Empty until the operator publishes one. */
 const PRIVACY_CONTACT = "";
@@ -52,8 +52,9 @@ const BLOCKS: Block[] = [
       <p>
         Only to show you your own spending: extract the transactions of your statements, categorize
         them, and report on them. Nothing is used for advertising, profiling, credit decisions or
-        sold to anyone. There are no analytics or tracking scripts, and the only cookie is the
-        sign-in session cookie.
+        sold to anyone. There are no advertising or third-party tracking scripts, and the only
+        cookie is the sign-in session cookie. Page visits are measured with Cloudflare Web
+        Analytics, described below.
       </p>
     ),
   },
@@ -85,6 +86,20 @@ const BLOCKS: Block[] = [
         chosen), so your data is stored outside Morocco. Cloudflare states that it does not use
         content processed by Workers AI to train models and does not keep inputs or outputs after
         the request. Cloudflare lists its own subprocessors for Workers AI.
+      </p>
+    ),
+  },
+  {
+    title: "Visit analytics",
+    body: (
+      <p>
+        Cloudflare, which hosts this site, adds its Web Analytics script to the pages. For each page
+        view it reports which page was opened, how long it took to load, the referring site, and the
+        browser, device type and country, to Cloudflare. Cloudflare states that it sets no cookies,
+        stores nothing in your browser and does not fingerprint visitors. It never sees your
+        statements or transactions: those are only shown to you after you sign in, and the script
+        measures page loads, not page content. The figures are only used to see how fast the site
+        is and which pages are visited.
       </p>
     ),
   },

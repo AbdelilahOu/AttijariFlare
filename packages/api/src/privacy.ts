@@ -18,7 +18,7 @@ import { ServiceError } from "./errors";
  * (apps/web/src/routes/privacy.tsx, PRIVACY.md). Bump it when the notice changes in a way
  * users must accept again.
  */
-export const PRIVACY_POLICY_VERSION = "2026-11-26";
+export const PRIVACY_POLICY_VERSION = "2026-11-27";
 
 /** Vectorize accepts up to 1000 ids per delete; stay well below. */
 const VECTOR_IDS_PER_DELETE = 100;

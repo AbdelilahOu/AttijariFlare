@@ -182,4 +182,5 @@ where and for how long; [SECURITY.md](SECURITY.md) covers the security measures 
 a vulnerability; [docs/privacy-audit.md](docs/privacy-audit.md) is the code audit behind both,
 and [docs/cndp-preparation.md](docs/cndp-preparation.md) gathers the facts for the CNDP
 declaration (loi 09-08). None of them is legal advice. Self-hosters: set `DO_NOT_TRACK=1` to stop
-the Alchemy CLI's telemetry; the app itself sends none.
+the Alchemy CLI's telemetry; the app itself sends none. The hosted instance uses Cloudflare Web
+Analytics, a zone setting disclosed in [PRIVACY.md](PRIVACY.md).

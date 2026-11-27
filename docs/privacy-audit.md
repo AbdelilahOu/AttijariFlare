@@ -190,6 +190,10 @@ lines above are stored. Cloudflare keeps Workers Logs 3 days on the Free plan
 
 - App: no analytics, tracking pixels or third-party scripts in `apps/web` (searched for
   analytics, gtag, beacon, telemetry; the only external links are plain `<a>` links).
+- Zone: Cloudflare Web Analytics (RUM) is on for the hosted zone. Cloudflare injects its beacon
+  into the HTML responses, and pages post to `/cdn-cgi/rum` (found during the #28 preview
+  checks). The owner chose to keep it, and it is disclosed in `PRIVACY.md` and on `/privacy`
+  (notice version 2026-11-27).
 - better-auth: off (default), now pinned off.
 - Alchemy CLI: sends telemetry unless `ALCHEMY_TELEMETRY_DISABLED`, `DO_NOT_TRACK` or
   `NO_TRACK` is set. Both workflows set `ALCHEMY_TELEMETRY_DISABLED: "1"`. A local

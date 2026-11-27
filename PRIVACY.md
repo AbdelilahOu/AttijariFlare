@@ -104,9 +104,25 @@ There are no other backups.
 - Objection, and any other request: through the privacy contact above. Users can complain to
   the CNDP (https://www.cndp.ma/).
 
+## Visit analytics (hosted instance)
+
+- The hosted instance (finance.ar7al.dev) has Cloudflare Web Analytics (Real User Monitoring)
+  turned on at the zone level. Cloudflare injects its beacon script into the HTML pages, and each
+  page view posts to `/cdn-cgi/rum`: page path, load timings (Core Web Vitals), referrer,
+  browser, device type and country.
+- Cloudflare states that Web Analytics sets no cookies, uses no local storage and does not
+  fingerprint visitors: https://www.cloudflare.com/web-analytics/ . To confirm against
+  Cloudflare's current documentation before the CNDP filing.
+- It measures page loads, not page content: statement data is never part of what it sends.
+- Purpose: site performance and page popularity. Recipient: Cloudflare (the same processor that
+  hosts everything else). Retention: as set by Cloudflare for Web Analytics.
+- It is a Cloudflare dashboard setting, not code. Turning it off (Web Analytics, or the zone's
+  automatic RUM setup) removes it without a deploy; this section must then be updated.
+
 ## Self-hosting
 
-- The code sends no telemetry or analytics. better-auth telemetry is pinned off.
+- The code sends no telemetry or analytics. better-auth telemetry is pinned off. Cloudflare Web
+  Analytics is a per-zone dashboard setting; self-hosters decide on it for their own zone.
 - The Alchemy CLI sends its own telemetry unless `ALCHEMY_TELEMETRY_DISABLED=1` (or
   `DO_NOT_TRACK=1`) is set; the GitHub workflows set it, and self-hosters should set it locally.
 - Whoever deploys an instance is the controller for its data and must make their own

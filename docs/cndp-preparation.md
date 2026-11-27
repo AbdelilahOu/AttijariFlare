@@ -79,6 +79,8 @@ source.
 ### Recipients
 
 - No recipient other than the user.
+- Visit analytics: Cloudflare Web Analytics (page path, load timings, referrer, browser,
+  device type, country, per page view), received by Cloudflare. See PRIVACY.md.
 - Processor: Cloudflare, Inc. (hosting, storage, AI inference), with its subprocessors for
   Workers AI: CoreWeave, Inc. (United States) and Nebius BV (England), per
   https://www.cloudflare.com/gdpr/subprocessors/cloudflare-services/.
