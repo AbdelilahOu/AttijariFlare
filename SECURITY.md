@@ -7,7 +7,7 @@
 
 Please do not open a public issue for a vulnerability. Use GitHub's private vulnerability
 reporting on this repository (Security tab, "Report a vulnerability"), or write to the security
-contact **[to be filled in by the operator]**. Include the steps to reproduce and the impact. Do
+contact **contact@ar7al.dev**. Include the steps to reproduce and the impact. Do
 not access other users' data to prove a finding: a test account of your own is enough.
 
 ## Measures

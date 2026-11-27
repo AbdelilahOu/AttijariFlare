@@ -13,7 +13,7 @@ The hosted instance at https://finance.ar7al.dev is run by one individual in Mor
 controller (responsable du traitement) for its users' data. Anyone who deploys this code is the
 controller for their own instance (see "Self-hosting").
 
-Privacy contact: **[to be filled in by the operator before sign-ups reopen]**
+Privacy contact: **contact@ar7al.dev**
 
 ## What is stored, and why
 

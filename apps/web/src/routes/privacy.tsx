@@ -8,7 +8,7 @@ import Seo from "~/components/seo";
 const PRIVACY_VERSION = "2026-11-27";
 
 /** Privacy contact of the operator. Empty until the operator publishes one. */
-const PRIVACY_CONTACT = "";
+const PRIVACY_CONTACT = "contact@ar7al.dev";
 
 type Block = { title: string; body: Element };
 
