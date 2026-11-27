@@ -133,7 +133,7 @@ No gap that lets one user read or change another user's data was found.
 - Rate limiting, before: better-auth enables it only when `NODE_ENV` is `production`, which the
   Worker does not set, and its default store is in memory per isolate, so it was off.
 - Rate limiting, now (issue #28): enabled explicitly in every stage, counted by Workers Rate
-  Limiting bindings (`packages/auth/src/rate-limit.ts`). Strict per-IP rules for sign-in (5 per
+  Limiting bindings (`apps/server/src/index.ts`). Strict per-IP rules for sign-in (5 per
   minute), sign-up, account deletion, password and email change and password reset (3 per
   minute); uploads are limited to 3 per user per minute. The client IP comes from
   `cf-connecting-ip`. The app stores no counters and never logs IPs.

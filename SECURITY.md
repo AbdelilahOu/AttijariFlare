@@ -20,7 +20,7 @@ not access other users' data to prove a finding: a test account of your own is e
 - `trustedOrigins` is the web origin only. CORS on the API allows that origin only, with
   credentials, for `GET`, `POST` and `OPTIONS`.
 - Account deletion requires the password again.
-- Rate limiting (`packages/auth/src/rate-limit.ts`): on in every stage, counted by Cloudflare's
+- Rate limiting (`apps/server/src/index.ts`, limits set in `packages/infra/alchemy.*.ts`): on in every stage, counted by Cloudflare's
   Workers Rate Limiting bindings (free, shared by all isolates of a Cloudflare location). Per
   client IP (`cf-connecting-ip`, set by Cloudflare): 5 sign-in attempts per minute, and 3 per
   minute for sign-up, account deletion, password and email change, and password reset. Over the
