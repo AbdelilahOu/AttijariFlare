@@ -1,5 +1,5 @@
 import { createTestDb } from "@attijari-flare/db/testing";
-import { describe, expect, test } from "vite-plus/test";
+import { beforeEach, describe, expect, test } from "vite-plus/test";
 
 import { authRateLimitOptions, createAuth, IP_ADDRESS_HEADERS } from "./index";
 import {
@@ -9,6 +9,8 @@ import {
   UPLOAD_RATE_LIMIT,
   createRateLimiter,
   decide,
+  mergeCounters,
+  resetLocalRateLimits,
   type RateLimitKV,
 } from "./rate-limit";
 
@@ -30,6 +32,8 @@ class FakeKV implements RateLimitKV {
 
 const SECRET = "test-secret-not-real-0123456789abcdef";
 const RULE = { window: 60, max: 3 };
+
+beforeEach(() => resetLocalRateLimits());
 
 describe("decide", () => {
   test("starts a window, counts up to max, then refuses", () => {
@@ -103,6 +107,25 @@ describe("createRateLimiter", () => {
     kv.failPuts = false;
     kv.failGets = true;
     expect((await limiter.consume("k", RULE)).allowed).toBe(true);
+  });
+});
+
+describe("mergeCounters", () => {
+  test("takes the higher active count and ignores expired ones", () => {
+    const local = { count: 4, windowStart: 1_000 };
+    const remote = { count: 1, windowStart: 1_000 };
+    expect(mergeCounters(local, remote, RULE, 2_000)).toBe(local);
+    expect(mergeCounters(null, remote, RULE, 2_000)).toBe(remote);
+    expect(mergeCounters(local, remote, RULE, 70_000)).toBeNull();
+  });
+
+  test("a stale KV read still limits within one isolate", async () => {
+    const kv = new FakeKV();
+    kv.get = async () => null;
+    const limiter = createRateLimiter(kv, SECRET);
+    const results = [];
+    for (let i = 0; i < 5; i++) results.push((await limiter.consume("stale", RULE)).allowed);
+    expect(results).toEqual([true, true, true, false, false]);
   });
 });
 

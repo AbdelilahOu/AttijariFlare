@@ -8,11 +8,12 @@ export type RateLimitDecision =
   | { allowed: false; retryAfter: number };
 
 export type RateLimitKV = {
-  get(key: string): Promise<string | null>;
+  get(key: string, options?: { cacheTtl?: number }): Promise<string | null>;
   put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
 };
 
 export const MIN_KV_TTL_SECONDS = 60;
+const KV_MIN_CACHE_TTL_SECONDS = 30;
 
 export const SENSITIVE_AUTH_RULES = {
   "/sign-in/email": { window: 60, max: 5 },
@@ -84,6 +85,49 @@ export type RateLimiter = {
   consume(key: string, rule: RateLimitRule): Promise<RateLimitDecision>;
 };
 
+const LOCAL_MAX_ENTRIES = 10_000;
+const localCounters = new Map<string, Counter & { expiresAt: number }>();
+
+function readLocal(key: string, at: number): Counter | null {
+  const entry = localCounters.get(key);
+  if (!entry) return null;
+  if (at >= entry.expiresAt) {
+    localCounters.delete(key);
+    return null;
+  }
+  return entry;
+}
+
+function writeLocal(key: string, counter: Counter, expiresAt: number) {
+  if (localCounters.size >= LOCAL_MAX_ENTRIES) {
+    const at = Date.now();
+    for (const [k, entry] of localCounters) if (at >= entry.expiresAt) localCounters.delete(k);
+    if (localCounters.size >= LOCAL_MAX_ENTRIES) localCounters.clear();
+  }
+  localCounters.set(key, { ...counter, expiresAt });
+}
+
+function active(counter: Counter | null, rule: RateLimitRule, at: number): Counter | null {
+  if (!counter || at < counter.windowStart || at - counter.windowStart >= rule.window * 1000) {
+    return null;
+  }
+  return counter;
+}
+
+// KV reads are cached and eventually consistent, so a per-isolate counter catches bursts
+// that KV alone would miss; the higher of the two counts wins.
+export function mergeCounters(
+  local: Counter | null,
+  remote: Counter | null,
+  rule: RateLimitRule,
+  at: number,
+): Counter | null {
+  const a = active(local, rule, at);
+  const b = active(remote, rule, at);
+  if (!a || !b) return a ?? b;
+  return a.count >= b.count ? a : b;
+}
+
 export function createRateLimiter(
   kv: RateLimitKV,
   secret: string,
@@ -106,17 +150,18 @@ export function createRateLimiter(
     async consume(key, rule) {
       const hashed = await storageKey(key);
       const at = now();
-      let stored: Counter | null;
+      let remote: Counter | null = null;
       try {
-        stored = parseCounter(await kv.get(hashed));
+        remote = parseCounter(await kv.get(hashed, { cacheTtl: KV_MIN_CACHE_TTL_SECONDS }));
       } catch (error) {
         logRateLimitError("read", error);
-        return { allowed: true, retryAfter: null };
       }
+      const stored = mergeCounters(readLocal(hashed, at), remote, rule, at);
       const { next, decision } = decide(stored, rule, at);
       if (!next) return decision;
-      const remainingMs = next.windowStart + rule.window * 1000 - at;
-      const expirationTtl = Math.max(MIN_KV_TTL_SECONDS, Math.ceil(remainingMs / 1000));
+      const expiresAt = next.windowStart + rule.window * 1000;
+      writeLocal(hashed, next, expiresAt);
+      const expirationTtl = Math.max(MIN_KV_TTL_SECONDS, Math.ceil((expiresAt - at) / 1000));
       try {
         await kv.put(hashed, JSON.stringify(next), { expirationTtl });
       } catch (error) {
@@ -126,4 +171,8 @@ export function createRateLimiter(
       return decision;
     },
   };
+}
+
+export function resetLocalRateLimits() {
+  localCounters.clear();
 }

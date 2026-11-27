@@ -28,6 +28,9 @@ not access other users' data to prove a finding: a test account of your own is e
   auth secret, so no raw IP is stored; they expire with their window. IPs are never logged.
 - Uploads (`POST /api/statements`) are limited to 10 per user per 10 minutes, to protect the
   Workers AI quota.
+- KV reads are cached and eventually consistent, so each isolate also keeps its own counter and
+  the higher count wins. The KV free tier allows 1,000 writes a day per account, enough while
+  sign-ups are paused; revisit (for example move the counters to D1) before sign-ups reopen.
 
 ### Authorization
 
