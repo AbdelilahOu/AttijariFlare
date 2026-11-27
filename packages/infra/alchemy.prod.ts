@@ -3,13 +3,6 @@ import * as Alchemy from "alchemy";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 
-// Legacy WNAM resources, no longer bound (issue #30). Declared only so Alchemy keeps them until the owner approves deletion.
-export const db = Cloudflare.D1.Database("database", {
-  migrations: "../../packages/db/src/migrations",
-});
-
-export const statements = Cloudflare.R2.Bucket("statements");
-
 export const dbEu = Cloudflare.D1.Database("database-eu", {
   jurisdiction: "eu",
   migrations: "../../packages/db/src/migrations",
@@ -18,12 +11,6 @@ export const dbEu = Cloudflare.D1.Database("database-eu", {
 export const statementsEu = Cloudflare.R2.Bucket("statements-eu", { jurisdiction: "eu" });
 
 const rateLimitNamespace = (n: number) => 2000 + n;
-
-export const statementIngestDlq = Cloudflare.Queues.Queue("statement-ingest-dlq");
-export const statementIngest = Cloudflare.Queues.Queue("statement-ingest");
-
-export const txnEnrichDlq = Cloudflare.Queues.Queue("txn-enrich-dlq");
-export const txnEnrich = Cloudflare.Queues.Queue("txn-enrich");
 
 export const statementIngestDlqEu = Cloudflare.Queues.Queue("statement-ingest-dlq-eu", {
   jurisdiction: "eu",
@@ -113,13 +100,6 @@ export default Alchemy.Stack(
     const enrichQueue = yield* txnEnrichEu;
     const enrichDlq = yield* txnEnrichDlqEu;
     const merchantIndex = yield* merchants;
-
-    yield* db;
-    yield* statements;
-    yield* statementIngestDlq;
-    yield* statementIngest;
-    yield* txnEnrichDlq;
-    yield* txnEnrich;
 
     yield* Cloudflare.Vectorize.MetadataIndex("merchants-user-id", {
       indexName: merchantIndex.indexName,
