@@ -1,159 +1,111 @@
 import { createTestDb } from "@attijari-flare/db/testing";
-import { beforeEach, describe, expect, test } from "vite-plus/test";
+import { describe, expect, test } from "vite-plus/test";
 
 import { authRateLimitOptions, createAuth, IP_ADDRESS_HEADERS } from "./index";
 import {
   AUTH_RATE_LIMIT_RULES,
-  MIN_KV_TTL_SECONDS,
-  SENSITIVE_AUTH_RULES,
-  UPLOAD_RATE_LIMIT,
-  createRateLimiter,
-  decide,
-  mergeCounters,
-  resetLocalRateLimits,
-  type RateLimitKV,
+  SENSITIVE_AUTH_PATHS,
+  SENSITIVE_LIMIT,
+  SIGN_IN_LIMIT,
+  SIGN_IN_PATH,
+  UPLOAD_LIMIT,
+  consumeBinding,
+  createAuthRateLimitStorage,
+  pathOfKey,
+  type RateLimitBinding,
 } from "./rate-limit";
 
-class FakeKV implements RateLimitKV {
-  entries = new Map<string, { value: string; ttl?: number }>();
-  failGets = false;
-  failPuts = false;
+class FakeBinding implements RateLimitBinding {
+  counts = new Map<string, number>();
+  keys: string[] = [];
+  fail = false;
 
-  async get(key: string) {
-    if (this.failGets) throw new Error("get failed");
-    return this.entries.get(key)?.value ?? null;
-  }
+  constructor(private readonly max: number) {}
 
-  async put(key: string, value: string, options?: { expirationTtl?: number }) {
-    if (this.failPuts) throw new Error("put failed");
-    this.entries.set(key, { value, ttl: options?.expirationTtl });
+  async limit({ key }: { key: string }) {
+    if (this.fail) throw new Error("binding failed");
+    this.keys.push(key);
+    const count = (this.counts.get(key) ?? 0) + 1;
+    this.counts.set(key, count);
+    return { success: count <= this.max };
   }
 }
 
-const SECRET = "test-secret-not-real-0123456789abcdef";
-const RULE = { window: 60, max: 3 };
-
-beforeEach(() => resetLocalRateLimits());
-
-describe("decide", () => {
-  test("starts a window, counts up to max, then refuses", () => {
-    const first = decide(null, RULE, 1_000);
-    expect(first.next).toEqual({ count: 1, windowStart: 1_000 });
-    expect(decide({ count: 2, windowStart: 1_000 }, RULE, 2_000).decision.allowed).toBe(true);
-    const over = decide({ count: 3, windowStart: 1_000 }, RULE, 31_000);
-    expect(over.next).toBeNull();
-    expect(over.decision).toEqual({ allowed: false, retryAfter: 30 });
-  });
-
-  test("resets once the window is over", () => {
-    const reset = decide({ count: 3, windowStart: 1_000 }, RULE, 61_000);
-    expect(reset.decision.allowed).toBe(true);
-    expect(reset.next).toEqual({ count: 1, windowStart: 61_000 });
-  });
-});
-
-describe("createRateLimiter", () => {
-  test("refuses past max and never stores the raw key", async () => {
-    const kv = new FakeKV();
-    let now = 0;
-    const limiter = createRateLimiter(kv, SECRET, () => now);
-    const key = "203.0.113.7|/sign-in/email";
-    const results = [];
-    for (let i = 0; i < 5; i++) {
-      now += 1_000;
-      results.push((await limiter.consume(key, RULE)).allowed);
-    }
-    expect(results).toEqual([true, true, true, false, false]);
-    const [storedKey] = [...kv.entries.keys()];
-    expect(storedKey).toMatch(/^rl:[0-9a-f]{64}$/);
-    expect(storedKey).not.toContain("203.0.113.7");
-    expect(kv.entries.get(storedKey!)!.value).not.toContain("203.0.113.7");
-  });
-
-  test("keys differ per client and per path", async () => {
-    const kv = new FakeKV();
-    const limiter = createRateLimiter(kv, SECRET);
-    await limiter.consume("203.0.113.7|/sign-in/email", RULE);
-    await limiter.consume("203.0.113.8|/sign-in/email", RULE);
-    await limiter.consume("203.0.113.7|/delete-user", RULE);
-    expect(kv.entries.size).toBe(3);
-  });
-
-  test("allows again after the window", async () => {
-    const kv = new FakeKV();
-    let now = 0;
-    const limiter = createRateLimiter(kv, SECRET, () => now);
-    for (let i = 0; i < 3; i++) await limiter.consume("k", RULE);
-    expect((await limiter.consume("k", RULE)).allowed).toBe(false);
-    now = 60_000;
-    expect((await limiter.consume("k", RULE)).allowed).toBe(true);
-  });
-
-  test("uses a TTL of at least the KV minimum", async () => {
-    const kv = new FakeKV();
-    const limiter = createRateLimiter(kv, SECRET);
-    await limiter.consume("k", { window: 600, max: 1 });
-    await limiter.consume("j", { window: 60, max: 1 });
-    const ttls = [...kv.entries.values()].map((entry) => entry.ttl);
-    expect(ttls).toEqual([600, 60]);
-    expect(Math.min(...(ttls as number[]))).toBeGreaterThanOrEqual(MIN_KV_TTL_SECONDS);
-  });
-
-  test("refuses when the write fails and allows when the read fails", async () => {
-    const kv = new FakeKV();
-    const limiter = createRateLimiter(kv, SECRET);
-    kv.failPuts = true;
-    expect(await limiter.consume("k", RULE)).toEqual({ allowed: false, retryAfter: 1 });
-    kv.failPuts = false;
-    kv.failGets = true;
-    expect((await limiter.consume("k", RULE)).allowed).toBe(true);
-  });
-});
-
-describe("mergeCounters", () => {
-  test("takes the higher active count and ignores expired ones", () => {
-    const local = { count: 4, windowStart: 1_000 };
-    const remote = { count: 1, windowStart: 1_000 };
-    expect(mergeCounters(local, remote, RULE, 2_000)).toBe(local);
-    expect(mergeCounters(null, remote, RULE, 2_000)).toBe(remote);
-    expect(mergeCounters(local, remote, RULE, 70_000)).toBeNull();
-  });
-
-  test("a stale KV read still limits within one isolate", async () => {
-    const kv = new FakeKV();
-    kv.get = async () => null;
-    const limiter = createRateLimiter(kv, SECRET);
-    const results = [];
-    for (let i = 0; i < 5; i++) results.push((await limiter.consume("stale", RULE)).allowed);
-    expect(results).toEqual([true, true, true, false, false]);
-  });
-});
-
-describe("auth rate-limit config", () => {
-  test("is enabled with KV storage and strict rules", () => {
-    const options = authRateLimitOptions({ RATE_LIMITS: new FakeKV(), BETTER_AUTH_SECRET: SECRET });
-    expect(options.enabled).toBe(true);
-    expect("customStorage" in options).toBe(true);
-    expect(SENSITIVE_AUTH_RULES["/sign-in/email"]).toEqual({ window: 60, max: 5 });
+describe("rules", () => {
+  test("strict limits on the sensitive paths, nothing counted elsewhere", () => {
+    expect(AUTH_RATE_LIMIT_RULES[SIGN_IN_PATH]).toEqual({ window: 60, max: 5 });
     for (const path of ["/sign-up/email", "/delete-user", "/change-password", "/reset-password"]) {
-      expect(AUTH_RATE_LIMIT_RULES[path]).toBeTruthy();
+      expect(AUTH_RATE_LIMIT_RULES[path]).toEqual(SENSITIVE_LIMIT);
     }
-    for (const rule of Object.values(SENSITIVE_AUTH_RULES)) {
-      expect(rule.window).toBeGreaterThanOrEqual(MIN_KV_TTL_SECONDS);
-    }
-    expect(UPLOAD_RATE_LIMIT.window).toBeGreaterThanOrEqual(MIN_KV_TTL_SECONDS);
     expect(Object.keys(AUTH_RATE_LIMIT_RULES).at(-1)).toBe("/**");
+    expect(AUTH_RATE_LIMIT_RULES["/**"]).toBe(false);
+    expect(UPLOAD_LIMIT.window).toBe(60);
     expect(IP_ADDRESS_HEADERS).toEqual(["cf-connecting-ip"]);
   });
 
-  test("better-auth answers 429 after 5 wrong sign-ins from one IP", async () => {
-    const kv = new FakeKV();
+  test("windows are periods the binding supports", () => {
+    for (const rule of [SIGN_IN_LIMIT, SENSITIVE_LIMIT, UPLOAD_LIMIT]) {
+      expect([10, 60]).toContain(rule.window);
+    }
+  });
+});
+
+describe("storage", () => {
+  test("routes sign-in to its own binding and the rest to the sensitive one", async () => {
+    const signIn = new FakeBinding(5);
+    const sensitive = new FakeBinding(3);
+    const storage = createAuthRateLimitStorage({ signIn, sensitive });
+    await storage.consume(`203.0.113.7|${SIGN_IN_PATH}`, SIGN_IN_LIMIT);
+    for (const path of SENSITIVE_AUTH_PATHS) {
+      await storage.consume(`203.0.113.7|${path}`, SENSITIVE_LIMIT);
+    }
+    expect(signIn.keys).toEqual([`203.0.113.7|${SIGN_IN_PATH}`]);
+    expect(sensitive.keys).toHaveLength(SENSITIVE_AUTH_PATHS.length);
+  });
+
+  test("refuses with the window as retry-after once the binding says no", async () => {
+    const binding = new FakeBinding(1);
+    expect(await consumeBinding(binding, "k", SENSITIVE_LIMIT)).toEqual({
+      allowed: true,
+      retryAfter: null,
+    });
+    expect(await consumeBinding(binding, "k", SENSITIVE_LIMIT)).toEqual({
+      allowed: false,
+      retryAfter: 60,
+    });
+  });
+
+  test("lets the request through when the binding fails", async () => {
+    const binding = new FakeBinding(1);
+    binding.fail = true;
+    expect((await consumeBinding(binding, "k", SENSITIVE_LIMIT)).allowed).toBe(true);
+  });
+
+  test("pathOfKey reads the path after the last separator", () => {
+    expect(pathOfKey("2001:db8::1|/sign-in/email")).toBe("/sign-in/email");
+  });
+});
+
+describe("better-auth", () => {
+  test("is enabled with the bindings as storage", () => {
+    const options = authRateLimitOptions({
+      AUTH_SIGN_IN_LIMIT: new FakeBinding(5),
+      AUTH_SENSITIVE_LIMIT: new FakeBinding(3),
+    });
+    expect(options.enabled).toBe(true);
+    expect("customStorage" in options).toBe(true);
+    expect(authRateLimitOptions({}).enabled).toBe(true);
+  });
+
+  test("answers 429 after 5 wrong sign-ins from one IP", async () => {
+    const signIn = new FakeBinding(5);
     const auth = createAuth(
       {
         BETTER_AUTH_URL: "https://api.example.test",
-        BETTER_AUTH_SECRET: SECRET,
+        BETTER_AUTH_SECRET: "test-secret-not-real-0123456789abcdef",
         CORS_ORIGIN: "https://app.example.test",
-        RATE_LIMITS: kv,
+        AUTH_SIGN_IN_LIMIT: signIn,
+        AUTH_SENSITIVE_LIMIT: new FakeBinding(3),
       },
       await createTestDb(),
     );
@@ -174,5 +126,6 @@ describe("auth rate-limit config", () => {
     expect(statuses.slice(0, 5).every((status) => status !== 429)).toBe(true);
     expect(statuses[5]).toBe(429);
     expect((await attempt("198.51.100.5")).status).not.toBe(429);
+    expect(signIn.keys.every((key) => key.endsWith("|/sign-in/email"))).toBe(true);
   });
 });

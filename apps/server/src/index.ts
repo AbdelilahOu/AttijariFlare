@@ -8,7 +8,7 @@ import {
   getStatementPdf,
   statementErrorStatus,
 } from "@attijari-flare/api/statements";
-import { UPLOAD_RATE_LIMIT, createRateLimiter } from "@attijari-flare/auth/rate-limit";
+import { UPLOAD_LIMIT, consumeBinding } from "@attijari-flare/auth/rate-limit";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError } from "@orpc/server";
@@ -72,14 +72,11 @@ app.post("/api/statements", async (c) => {
   const deps = await statementDeps(c);
   if (!deps) return c.json({ code: "UNAUTHORIZED", message: "Sign in first." }, 401);
 
-  const limit = await createRateLimiter(ENV.RATE_LIMITS, ENV.BETTER_AUTH_SECRET).consume(
-    `upload|${deps.userId}`,
-    UPLOAD_RATE_LIMIT,
-  );
+  const limit = await consumeBinding(ENV.UPLOAD_LIMIT, `upload|${deps.userId}`, UPLOAD_LIMIT);
   if (!limit.allowed) {
     c.header("Retry-After", String(limit.retryAfter));
     return c.json(
-      { code: "RATE_LIMITED", message: "Too many uploads. Try again in a few minutes." },
+      { code: "RATE_LIMITED", message: "Too many uploads. Try again in a minute." },
       429,
     );
   }

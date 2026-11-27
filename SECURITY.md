@@ -20,17 +20,18 @@ not access other users' data to prove a finding: a test account of your own is e
 - `trustedOrigins` is the web origin only. CORS on the API allows that origin only, with
   credentials, for `GET`, `POST` and `OPTIONS`.
 - Account deletion requires the password again.
-- Rate limiting (`packages/auth/src/rate-limit.ts`): on in every stage, counted in Workers KV
-  so all isolates share the counters. Per client IP (`cf-connecting-ip`, set by Cloudflare):
-  5 sign-in attempts per minute; 3 to 5 per 10 minutes for sign-up, account deletion, password
-  and email change, and password reset. Over the limit, better-auth answers 429 and the forms
-  say "Too many attempts, try again in a minute." KV keys are HMACs of IP and path under the
-  auth secret, so no raw IP is stored; they expire with their window. IPs are never logged.
-- Uploads (`POST /api/statements`) are limited to 10 per user per 10 minutes, to protect the
-  Workers AI quota.
-- KV reads are cached and eventually consistent, so each isolate also keeps its own counter and
-  the higher count wins. The KV free tier allows 1,000 writes a day per account, enough while
-  sign-ups are paused; revisit (for example move the counters to D1) before sign-ups reopen.
+- Rate limiting (`packages/auth/src/rate-limit.ts`): on in every stage, counted by Cloudflare's
+  Workers Rate Limiting bindings (free, shared by all isolates of a Cloudflare location). Per
+  client IP (`cf-connecting-ip`, set by Cloudflare): 5 sign-in attempts per minute, and 3 per
+  minute for sign-up, account deletion, password and email change, and password reset. Over the
+  limit, better-auth answers 429 and the forms say "Too many attempts, try again in a minute."
+  Counters live only in Cloudflare's rate limiter for the one-minute window; the app stores
+  nothing and never logs IPs.
+- Uploads (`POST /api/statements`) are limited to 3 per user per minute, to protect the Workers
+  AI quota.
+- Counts are per Cloudflare location and the binding allows only 10- or 60-second periods, so a
+  client spread over many locations gets more attempts. Revisit (for example counters in D1)
+  before sign-ups reopen.
 
 ### Authorization
 

@@ -17,8 +17,6 @@ export const db = Cloudflare.D1.Database("database", {
 // Original PDFs and extraction artifacts: statements/{id}/original.pdf, extracted.md, extraction.json
 export const statements = Cloudflare.R2.Bucket("statements");
 
-export const rateLimits = Cloudflare.KV.Namespace("rate-limits");
-
 // Upload -> ingest consumer (toMarkdown + LLM extraction). Failed messages land in the DLQ.
 export const statementIngestDlq = Cloudflare.Queues.Queue("statement-ingest-dlq");
 export const statementIngest = Cloudflare.Queues.Queue("statement-ingest");
@@ -57,6 +55,8 @@ export default Alchemy.Stack(
       );
     }
     const prNumber = match[1];
+    // Rate limit namespace ids are account-wide: each stage gets its own so counters never mix.
+    const rateLimitNamespace = (n: number) => 100_000 + Number(prNumber) * 10 + n;
 
     // One subdomain level only: the free Universal SSL certificate covers *.ar7al.dev.
     const webHost = `finance-pr-${prNumber}.ar7al.dev`;
@@ -72,7 +72,18 @@ export default Alchemy.Stack(
       env: {
         DB: db,
         STATEMENTS: statements,
-        RATE_LIMITS: rateLimits,
+        AUTH_SIGN_IN_LIMIT: Cloudflare.RateLimit("AUTH_SIGN_IN_LIMIT", {
+          namespaceId: rateLimitNamespace(1),
+          simple: { limit: 5, period: 60 },
+        }),
+        AUTH_SENSITIVE_LIMIT: Cloudflare.RateLimit("AUTH_SENSITIVE_LIMIT", {
+          namespaceId: rateLimitNamespace(2),
+          simple: { limit: 3, period: 60 },
+        }),
+        UPLOAD_LIMIT: Cloudflare.RateLimit("UPLOAD_LIMIT", {
+          namespaceId: rateLimitNamespace(3),
+          simple: { limit: 3, period: 60 },
+        }),
         STATEMENT_INGEST: statementIngest,
         TXN_ENRICH: txnEnrich,
         // Physical queue names (they include stage and a random suffix); queue() dispatches on these.

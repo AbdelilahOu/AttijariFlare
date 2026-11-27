@@ -5,7 +5,11 @@ import { seedDefaultCategories } from "@attijari-flare/db/seed";
 import { betterAuth } from "better-auth";
 import { APIError } from "better-auth/api";
 
-import { AUTH_RATE_LIMIT_RULES, createRateLimiter, type RateLimitKV } from "./rate-limit";
+import {
+  AUTH_RATE_LIMIT_RULES,
+  createAuthRateLimitStorage,
+  type RateLimitBinding,
+} from "./rate-limit";
 
 export type AuthConfig = {
   BETTER_AUTH_URL: string;
@@ -23,7 +27,8 @@ export type AuthConfig = {
    * accounts keep signing in. When on, the SINGLE_USER guard still applies.
    */
   SIGNUPS_ENABLED?: string | boolean;
-  RATE_LIMITS?: RateLimitKV;
+  AUTH_SIGN_IN_LIMIT?: RateLimitBinding;
+  AUTH_SENSITIVE_LIMIT?: RateLimitBinding;
 };
 
 export function isSingleUserMode(value: AuthConfig["SINGLE_USER"]): boolean {
@@ -38,10 +43,18 @@ export function isSignupsEnabled(value: AuthConfig["SIGNUPS_ENABLED"]): boolean 
   return ["true", "1", "yes", "on"].includes(value.trim().toLowerCase());
 }
 
-export function authRateLimitOptions(env: Pick<AuthConfig, "RATE_LIMITS" | "BETTER_AUTH_SECRET">) {
-  const storage = env.RATE_LIMITS
-    ? { customStorage: createRateLimiter(env.RATE_LIMITS, env.BETTER_AUTH_SECRET) }
-    : { storage: "memory" as const };
+export function authRateLimitOptions(
+  env: Pick<AuthConfig, "AUTH_SIGN_IN_LIMIT" | "AUTH_SENSITIVE_LIMIT">,
+) {
+  const storage =
+    env.AUTH_SIGN_IN_LIMIT && env.AUTH_SENSITIVE_LIMIT
+      ? {
+          customStorage: createAuthRateLimitStorage({
+            signIn: env.AUTH_SIGN_IN_LIMIT,
+            sensitive: env.AUTH_SENSITIVE_LIMIT,
+          }),
+        }
+      : { storage: "memory" as const };
   return {
     enabled: true,
     window: 60,
