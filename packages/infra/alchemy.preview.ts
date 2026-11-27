@@ -1,38 +1,25 @@
-// Pull request previews, deployed and destroyed by .github/workflows/preview.yml:
-//   alchemy deploy --config alchemy.preview.ts --stage pr-<n>
-// Web on finance-pr-<n>.ar7al.dev, API on finance-pr-<n>-api.ar7al.dev.
-// BETTER_AUTH_SECRET comes from the CI environment.
-// Same stack as alchemy.dev.ts and alchemy.prod.ts; keep them in sync.
 import * as Cloudflare from "@alchemy.run/cloudflare";
 import * as Alchemy from "alchemy";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 
-// Every resource gets a physical name that includes the stage, so stages never share
-// D1, R2, queues, DLQs or the Vectorize index.
 export const db = Cloudflare.D1.Database("database", {
   migrations: "../../packages/db/src/migrations",
 });
 
-// Original PDFs and extraction artifacts: statements/{id}/original.pdf, extracted.md, extraction.json
 export const statements = Cloudflare.R2.Bucket("statements");
 
-// Upload -> ingest consumer (toMarkdown + LLM extraction). Failed messages land in the DLQ.
 export const statementIngestDlq = Cloudflare.Queues.Queue("statement-ingest-dlq");
 export const statementIngest = Cloudflare.Queues.Queue("statement-ingest");
 
-// Ingest -> enrich consumer (merchant embeddings + categorization).
 export const txnEnrichDlq = Cloudflare.Queues.Queue("txn-enrich-dlq");
 export const txnEnrich = Cloudflare.Queues.Queue("txn-enrich");
 
-// Workers Logs keep only the app's own console lines (redacted: ids, counts, error kinds).
-// Invocation logs are off: they record request metadata such as the client IP and location.
 const observability = {
   enabled: true,
   logs: { enabled: true, invocationLogs: false },
 };
 
-// Merchant embeddings from @cf/baai/bge-m3 (1024 dimensions).
 export const merchants = Cloudflare.Vectorize.Index("merchants", {
   dimensions: 1024,
   metric: "cosine",
@@ -43,7 +30,6 @@ export default Alchemy.Stack(
   "attijari-flare",
   {
     providers: Cloudflare.providers(),
-    // State lives on Cloudflare, so CI and local runs share it per stage.
     state: Cloudflare.state(),
   },
   Effect.gen(function* () {
@@ -55,10 +41,8 @@ export default Alchemy.Stack(
       );
     }
     const prNumber = match[1];
-    // Rate limit namespace ids are account-wide: each stage gets its own so counters never mix.
     const rateLimitNamespace = (n: number) => 100_000 + Number(prNumber) * 10 + n;
 
-    // One subdomain level only: the free Universal SSL certificate covers *.ar7al.dev.
     const webHost = `finance-pr-${prNumber}.ar7al.dev`;
     const apiHost = `finance-pr-${prNumber}-api.ar7al.dev`;
 
@@ -86,7 +70,6 @@ export default Alchemy.Stack(
         }),
         STATEMENT_INGEST: statementIngest,
         TXN_ENRICH: txnEnrich,
-        // Physical queue names (they include stage and a random suffix); queue() dispatches on these.
         STATEMENT_INGEST_QUEUE_NAME: statementIngest.pipe(Effect.map((queue) => queue.queueName)),
         TXN_ENRICH_QUEUE_NAME: txnEnrich.pipe(Effect.map((queue) => queue.queueName)),
         VECTORIZE: merchants,
@@ -94,9 +77,7 @@ export default Alchemy.Stack(
         CORS_ORIGIN: Config.succeed(`https://${webHost}`),
         BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
         BETTER_AUTH_URL: Cloudflare.Worker.URL,
-        // Sign-up guard (packages/auth): refuses sign-up once a user exists unless set to "false".
         SINGLE_USER: Config.String("SINGLE_USER").pipe(Config.withDefault("true")),
-        // Master sign-up switch (packages/auth): sign-up is refused unless set to "true".
         SIGNUPS_ENABLED: Config.String("SIGNUPS_ENABLED").pipe(Config.withDefault("false")),
       },
       dev: {
@@ -109,8 +90,6 @@ export default Alchemy.Stack(
     const enrichDlq = yield* txnEnrichDlq;
     const merchantIndex = yield* merchants;
 
-    // kNN in the enrich consumer filters on these metadata properties. Vectors written before
-    // an index exists are not indexed, so they are created with the stack.
     yield* Cloudflare.Vectorize.MetadataIndex("merchants-user-id", {
       indexName: merchantIndex.indexName,
       propertyName: "user_id",
@@ -122,14 +101,11 @@ export default Alchemy.Stack(
       indexType: "boolean",
     });
 
-    // The server worker is the only consumer of both queues. Dead-letter queues are not
-    // consumed (that would spend Queues operations); inspect them in the dashboard.
     yield* Cloudflare.Queues.Consumer("statement-ingest-consumer", {
       queueId: ingestQueue.queueId,
       scriptName: serverWorker.workerName,
       deadLetterQueue: ingestDlq.queueName,
       settings: {
-        // One statement per invocation: each one costs several AI calls.
         batchSize: 1,
         maxConcurrency: 1,
         maxRetries: 3,
@@ -158,7 +134,6 @@ export default Alchemy.Stack(
       domain: { name: webHost, zoneName: "ar7al.dev" },
       env: {
         VITE_SERVER_URL: serverWorker.url.as<string>(),
-        // Shows the paused-sign-ups banner and hides sign-up calls to action when not "true".
         VITE_SIGNUPS_ENABLED: Config.String("SIGNUPS_ENABLED").pipe(Config.withDefault("false")),
       },
       dev: {
