@@ -36,7 +36,8 @@ Sign-ups on the hosted instance stay paused (#24) until the CNDP has answered.
 ### Controller (responsable du traitement)
 
 - A natural person (personne physique) based in Morocco, operating https://finance.ar7al.dev as a
-  personal, free project. Fill in abdelilah ouaadouch, tinghir, contact@ar7al.dev.
+  personal, free project. Controller: Abdelilah Ouaadouch, Tinghir, Morocco. Contact:
+  contact@ar7al.dev.
 - No representative, no joint controller.
 
 ### Name and purpose of the processing
@@ -100,7 +101,7 @@ source.
 - Information: the `/privacy` page and the consent notice on the upload page.
 - Access and rectification: in the app.
 - Deletion: per statement, or the whole account, from the app.
-- Opposition and other requests: privacy contact (to be published).
+- Opposition and other requests: privacy contact, contact@ar7al.dev.
 
 ### Security measures (article 23)
 
