@@ -10,11 +10,8 @@ export const db = Cloudflare.D1.Database("database", {
 export const statements = Cloudflare.R2.Bucket("statements");
 
 // EU copies of the WNAM resources above (issue #30). The legacy ones stay until the owner approves their deletion.
-export const dbEu = Cloudflare.D1.Database("database-eu", {
-  jurisdiction: "eu",
-  migrations: "../../packages/db/src/migrations",
-  clone: db,
-});
+// Filled with a full export of the WNAM database (schema, data, migration ledger); migrations are added at the switch.
+export const dbEu = Cloudflare.D1.Database("database-eu", { jurisdiction: "eu" });
 
 export const statementsEu = Cloudflare.R2.Bucket("statements-eu", { jurisdiction: "eu" });
 
