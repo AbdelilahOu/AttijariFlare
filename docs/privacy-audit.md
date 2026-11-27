@@ -130,8 +130,13 @@ No gap that lets one user read or change another user's data was found.
   (better-auth default). Passwords are hashed with scrypt (better-auth default).
 - `trustedOrigins` is the web origin only.
 - Sign-up needs no email verification, so an email address is not proven to belong to the user.
-- Rate limiting: better-auth enables it only when `NODE_ENV` is `production`, which the Worker
-  does not set, and its default store is in memory per isolate. Treat it as off (follow-up).
+- Rate limiting, before: better-auth enables it only when `NODE_ENV` is `production`, which the
+  Worker does not set, and its default store is in memory per isolate, so it was off.
+- Rate limiting, now (issue #28): enabled explicitly in every stage, counted by Workers Rate
+  Limiting bindings (`packages/auth/src/rate-limit.ts`). Strict per-IP rules for sign-in (5 per
+  minute), sign-up, account deletion, password and email change and password reset (3 per
+  minute); uploads are limited to 3 per user per minute. The client IP comes from
+  `cf-connecting-ip`. The app stores no counters and never logs IPs.
 - Account deletion, before: did not exist.
 - Account deletion, now: better-auth `user.deleteUser` is enabled. The account menu's "Delete my
   account" (`apps/web/src/components/delete-account-dialog.tsx`) sends the password;
@@ -205,11 +210,15 @@ lines above are stored. Cloudflare keeps Workers Logs 3 days on the Free plan
 
 The landing page footer now links to `/privacy`, and the FAQ answer points to it.
 
-## 10. Follow-ups (not in this change)
+## 10. Follow-ups
 
-- Rate limiting on auth endpoints (database-backed store).
+Done since the audit (issue #28): auth and upload rate limiting (section 5), and security
+headers on both workers (CSP with nonces, HSTS, nosniff, Referrer-Policy, Permissions-Policy,
+COOP; see `SECURITY.md`).
+
+Still open:
+
 - Optional automatic PDF expiry (lifecycle rule or scheduled job).
 - Strip the holder's name and address from the extraction context where the layout allows.
-- Content-Security-Policy and other security headers on the web app.
 - Email verification before upload, so an account is tied to a real address.
 - Move D1 and R2 to the EU jurisdiction if the CNDP prefers it (see `docs/cndp-preparation.md`).

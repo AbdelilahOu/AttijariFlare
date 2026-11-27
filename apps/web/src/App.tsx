@@ -1,6 +1,7 @@
 import { Title } from "@solidjs/meta";
 import { QueryClientProvider } from "@tanstack/solid-query";
 import { Loading } from "solid-js";
+import { z } from "zod";
 
 import Loader from "~/components/loader";
 import Shell from "~/components/shell";
@@ -8,6 +9,9 @@ import { Router } from "~/router";
 import { createQueryClient } from "~/utils/orpc";
 
 import "./styles.css";
+
+// Zod probes `new Function` support, which a CSP without unsafe-eval reports as a violation.
+z.config({ jitless: true });
 
 export default function App() {
   const queryClient = createQueryClient();

@@ -1,4 +1,4 @@
-import { HydrationScript } from "@solidjs/web";
+import { getRequestEvent, HydrationScript } from "@solidjs/web";
 import type { ParentProps } from "solid-js";
 
 import latinFont from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
@@ -6,6 +6,7 @@ import latinFont from "@fontsource-variable/inter/files/inter-latin-wght-normal.
 import { THEME_SCRIPT } from "~/lib/theme";
 
 export default function Document(props: ParentProps) {
+  const nonce = getRequestEvent()?.nonce;
   return (
     <html lang="en">
       <head>
@@ -16,7 +17,7 @@ export default function Document(props: ParentProps) {
         <meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)" />
         <link rel="preload" href={latinFont} as="font" type="font/woff2" crossorigin="anonymous" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <script innerHTML={THEME_SCRIPT} />
+        <script nonce={typeof nonce === "string" ? nonce : undefined} innerHTML={THEME_SCRIPT} />
         <HydrationScript />
       </head>
       <body>{props.children}</body>
