@@ -9,6 +9,15 @@ export const db = Cloudflare.D1.Database("database", {
 
 export const statements = Cloudflare.R2.Bucket("statements");
 
+// EU copies of the WNAM resources above (issue #30). The legacy ones stay until the owner approves their deletion.
+export const dbEu = Cloudflare.D1.Database("database-eu", {
+  jurisdiction: "eu",
+  migrations: "../../packages/db/src/migrations",
+  clone: db,
+});
+
+export const statementsEu = Cloudflare.R2.Bucket("statements-eu", { jurisdiction: "eu" });
+
 const rateLimitNamespace = (n: number) => 2000 + n;
 
 export const statementIngestDlq = Cloudflare.Queues.Queue("statement-ingest-dlq");
@@ -16,6 +25,16 @@ export const statementIngest = Cloudflare.Queues.Queue("statement-ingest");
 
 export const txnEnrichDlq = Cloudflare.Queues.Queue("txn-enrich-dlq");
 export const txnEnrich = Cloudflare.Queues.Queue("txn-enrich");
+
+export const statementIngestDlqEu = Cloudflare.Queues.Queue("statement-ingest-dlq-eu", {
+  jurisdiction: "eu",
+});
+export const statementIngestEu = Cloudflare.Queues.Queue("statement-ingest-eu", {
+  jurisdiction: "eu",
+});
+
+export const txnEnrichDlqEu = Cloudflare.Queues.Queue("txn-enrich-dlq-eu", { jurisdiction: "eu" });
+export const txnEnrichEu = Cloudflare.Queues.Queue("txn-enrich-eu", { jurisdiction: "eu" });
 
 const observability = {
   enabled: true,
@@ -95,6 +114,13 @@ export default Alchemy.Stack(
     const enrichQueue = yield* txnEnrich;
     const enrichDlq = yield* txnEnrichDlq;
     const merchantIndex = yield* merchants;
+
+    yield* dbEu;
+    yield* statementsEu;
+    yield* statementIngestDlqEu;
+    yield* statementIngestEu;
+    yield* txnEnrichDlqEu;
+    yield* txnEnrichEu;
 
     yield* Cloudflare.Vectorize.MetadataIndex("merchants-user-id", {
       indexName: merchantIndex.indexName,

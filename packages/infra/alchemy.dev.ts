@@ -5,18 +5,21 @@ import * as Effect from "effect/Effect";
 import "varlock/auto-load";
 
 export const db = Cloudflare.D1.Database("database", {
+  jurisdiction: "eu",
   migrations: "../../packages/db/src/migrations",
 });
 
-export const statements = Cloudflare.R2.Bucket("statements");
+export const statements = Cloudflare.R2.Bucket("statements", { jurisdiction: "eu" });
 
 const rateLimitNamespace = (n: number) => 1000 + n;
 
-export const statementIngestDlq = Cloudflare.Queues.Queue("statement-ingest-dlq");
-export const statementIngest = Cloudflare.Queues.Queue("statement-ingest");
+export const statementIngestDlq = Cloudflare.Queues.Queue("statement-ingest-dlq", {
+  jurisdiction: "eu",
+});
+export const statementIngest = Cloudflare.Queues.Queue("statement-ingest", { jurisdiction: "eu" });
 
-export const txnEnrichDlq = Cloudflare.Queues.Queue("txn-enrich-dlq");
-export const txnEnrich = Cloudflare.Queues.Queue("txn-enrich");
+export const txnEnrichDlq = Cloudflare.Queues.Queue("txn-enrich-dlq", { jurisdiction: "eu" });
+export const txnEnrich = Cloudflare.Queues.Queue("txn-enrich", { jurisdiction: "eu" });
 
 const observability = {
   enabled: true,
