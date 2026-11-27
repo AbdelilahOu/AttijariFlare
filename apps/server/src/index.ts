@@ -8,7 +8,6 @@ import {
   getStatementPdf,
   statementErrorStatus,
 } from "@attijari-flare/api/statements";
-import { authLimiterFor } from "@attijari-flare/auth/rate-limit";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError } from "@orpc/server";
@@ -52,8 +51,25 @@ const tooManyRequests = (c: HonoContext, message: string) => {
   return c.json({ code: "RATE_LIMITED", message }, 429);
 };
 
+const SENSITIVE_AUTH_PATHS = new Set([
+  "/sign-up/email",
+  "/delete-user",
+  "/change-password",
+  "/change-email",
+  "/request-password-reset",
+  "/forget-password",
+  "/reset-password",
+  "/send-verification-email",
+]);
+
 app.post("/api/auth/*", async (c, next) => {
-  const limiter = authLimiterFor(c.req.path.slice("/api/auth".length), ENV);
+  const path = c.req.path.slice("/api/auth".length);
+  const limiter =
+    path === "/sign-in/email"
+      ? ENV.AUTH_SIGN_IN_LIMIT
+      : SENSITIVE_AUTH_PATHS.has(path)
+        ? ENV.AUTH_SENSITIVE_LIMIT
+        : undefined;
   if (limiter) {
     const { success } = await limiter.limit({ key: c.req.header("cf-connecting-ip") ?? "unknown" });
     if (!success) return tooManyRequests(c, "Too many attempts, try again in a minute.");
