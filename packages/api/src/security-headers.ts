@@ -39,7 +39,7 @@ export function webContentSecurityPolicy({ nonce, apiOrigin, dev = false }: WebC
   });
 }
 
-export const WEB_CSP_HEADER = "Content-Security-Policy-Report-Only";
+export const WEB_CSP_HEADER = "Content-Security-Policy";
 
 export function webSecurityHeaders(options: WebCspOptions): Record<string, string> {
   return { ...BASE_SECURITY_HEADERS, [WEB_CSP_HEADER]: webContentSecurityPolicy(options) };
